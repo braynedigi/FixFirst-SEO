@@ -563,7 +563,7 @@ function BulkAddModal({ projectId, groups, onClose, onSuccess }: any) {
 }
 
 function GSCConnectModal({ onClose }: any) {
-  const { data } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ['gsc-auth-url'],
     queryFn: async () => {
       const response = await gscApi.getAuthUrl();
@@ -575,22 +575,68 @@ function GSCConnectModal({ onClose }: any) {
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-background-card border border-border rounded-lg max-w-md w-full p-6">
         <h2 className="text-xl font-bold text-text-primary mb-4">Connect Google Search Console</h2>
-        <p className="text-text-secondary mb-6">
-          Connect your Google Search Console account to automatically sync keyword rankings and get real data from Google.
-        </p>
+        
+        {error ? (
+          <div className="mb-6">
+            <div className="p-4 bg-error/10 border border-error rounded-lg mb-4">
+              <p className="text-sm font-medium text-error mb-2">⚠️ GSC API Not Configured</p>
+              <p className="text-xs text-text-secondary">
+                Google Search Console credentials are not set up. Follow the setup guide to enable GSC integration.
+              </p>
+            </div>
+            <div className="p-4 bg-background-secondary rounded-lg">
+              <p className="text-sm font-medium text-text-primary mb-2">📖 Quick Setup:</p>
+              <ol className="text-xs text-text-secondary space-y-1 list-decimal list-inside">
+                <li>Go to Google Cloud Console</li>
+                <li>Enable Google Search Console API</li>
+                <li>Create OAuth 2.0 credentials</li>
+                <li>Add redirect URI: <code className="text-xs bg-background-primary px-1 py-0.5 rounded">http://localhost:3001/api/gsc/callback</code></li>
+                <li>Set environment variables (GSC_CLIENT_ID, GSC_CLIENT_SECRET)</li>
+                <li>Restart API server</li>
+              </ol>
+              <p className="text-xs text-text-tertiary mt-3">
+                See <code className="bg-background-primary px-1 py-0.5 rounded">docs/GSC_SETUP_GUIDE.md</code> for detailed instructions
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="mb-6">
+            <p className="text-text-secondary mb-4">
+              Connect your Google Search Console account to automatically sync keyword rankings and get real data from Google.
+            </p>
+            <div className="p-3 bg-primary/10 border border-primary rounded-lg">
+              <p className="text-xs text-text-secondary">
+                ✨ <strong className="text-text-primary">Free forever</strong> • Real Google data • 16 months history
+              </p>
+            </div>
+          </div>
+        )}
+        
         <div className="flex gap-3">
           <button
             onClick={onClose}
             className="flex-1 px-4 py-2 bg-background-secondary text-text-primary rounded-lg hover:bg-background-secondary/80"
           >
-            Cancel
+            {error ? 'Close' : 'Cancel'}
           </button>
-          <a
-            href={data?.authUrl}
-            className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-center"
-          >
-            Connect GSC
-          </a>
+          {!error && data?.authUrl && (
+            <a
+              href={data.authUrl}
+              className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-center"
+            >
+              {isLoading ? 'Loading...' : 'Connect GSC'}
+            </a>
+          )}
+          {error && (
+            <a
+              href="https://console.cloud.google.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-center"
+            >
+              Setup Now →
+            </a>
+          )}
         </div>
       </div>
     </div>
