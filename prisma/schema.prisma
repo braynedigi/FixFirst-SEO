@@ -55,6 +55,8 @@ model Project {
   webhooks     Webhook[]
   notificationRules NotificationRule[]
   goals        Goal[]
+  keywordGroups KeywordGroup[]
+  keywords     Keyword[]
   
   @@unique([userId, domain], name: "userId_domain")
   @@index([userId])
@@ -449,6 +451,80 @@ enum GoalCategory {
   ON_PAGE
   STRUCTURED_DATA
   LOCAL_SEO
+}
+
+// Keyword Tracking Models
+model KeywordGroup {
+  id          String    @id @default(cuid())
+  projectId   String    @map("project_id")
+  name        String
+  color       String?   // Hex color for UI grouping
+  description String?   @db.Text
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  keywords    Keyword[]
+  
+  @@index([projectId])
+  @@map("keyword_groups")
+}
+
+model Keyword {
+  id              String         @id @default(cuid())
+  projectId       String         @map("project_id")
+  groupId         String?        @map("group_id")
+  keyword         String
+  targetUrl       String?        @map("target_url") // Expected landing page
+  device          KeywordDevice  @default(DESKTOP)
+  location        String         @default("US") // Country code
+  language        String         @default("en") // Language code
+  searchVolume    Int?           @map("search_volume") // Monthly search volume (from GSC or paid API)
+  difficulty      Int?           // Keyword difficulty 0-100 (from paid API)
+  currentPosition Int?           @map("current_position") // Latest position
+  previousPosition Int?          @map("previous_position") // Previous check position
+  bestPosition    Int?           @map("best_position") // Best position ever achieved
+  worstPosition   Int?           @map("worst_position") // Worst position recorded
+  averagePosition Float?         @map("average_position") // Average position
+  isTracking      Boolean        @default(true) @map("is_tracking") // Pause/resume tracking
+  metadata        Json           @default("{}")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+  
+  project         Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  group           KeywordGroup?  @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  rankings        KeywordRanking[]
+  
+  @@unique([projectId, keyword, device, location])
+  @@index([projectId])
+  @@index([groupId])
+  @@index([isTracking])
+  @@map("keywords")
+}
+
+model KeywordRanking {
+  id              String    @id @default(cuid())
+  keywordId       String    @map("keyword_id")
+  position        Int?      // Null if not ranking in top 100
+  url             String?   // Actual URL ranking
+  impressions     Int?      // From GSC
+  clicks          Int?      // From GSC
+  ctr             Float?    // Click-through rate
+  serpFeatures    Json?     @map("serp_features") // Featured snippet, PAA, etc.
+  competitorUrls  Json?     @map("competitor_urls") // Top 10 URLs from SERP
+  capturedAt      DateTime  @default(now()) @map("captured_at")
+  
+  keyword         Keyword   @relation(fields: [keywordId], references: [id], onDelete: Cascade)
+  
+  @@index([keywordId])
+  @@index([capturedAt])
+  @@map("keyword_rankings")
+}
+
+enum KeywordDevice {
+  DESKTOP
+  MOBILE
+  TABLET
 }
 
 enum RecommendationCategory {

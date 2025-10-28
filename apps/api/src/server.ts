@@ -26,6 +26,9 @@ import { emailTemplatesRoutes } from './routes/email-templates';
 import webhooksRoutes from './routes/webhooks';
 import notificationsRoutes from './routes/notifications';
 import { goalsRoutes } from './routes/goals';
+import { keywordsRoutes } from './routes/keywords';
+import { keywordGroupsRoutes } from './routes/keywordGroups';
+import { gscRoutes } from './routes/gsc';
 import { errorHandler } from './middleware/error-handler';
 import { rateLimiter } from './middleware/rate-limiter';
 import { websocketService } from './services/websocket-service';
@@ -112,6 +115,9 @@ app.use('/api/email-templates', emailTemplatesRoutes);
 app.use('/api/webhooks', webhooksRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/goals', goalsRoutes);
+app.use('/api/keywords', keywordsRoutes);
+app.use('/api/keyword-groups', keywordGroupsRoutes);
+app.use('/api/gsc', gscRoutes);
 
 // Error handling
 app.use(errorHandler);
