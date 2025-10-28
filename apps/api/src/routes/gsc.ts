@@ -5,6 +5,27 @@ import { z } from 'zod';
 
 const router = Router();
 
+// Handle OAuth callback (must be BEFORE router.use(authenticate))
+// This route is public because Google's OAuth redirect doesn't include our JWT token
+router.get('/callback', async (req, res, next) => {
+  try {
+    const { code, state: userId } = req.query;
+
+    if (!code || !userId) {
+      return res.status(400).json({ error: 'Missing code or state parameter' });
+    }
+
+    await GSCService.handleCallback(code as string, userId as string);
+
+    // Redirect to frontend success page
+    res.redirect(`${process.env.FRONTEND_URL}/dashboard?gsc=connected`);
+  } catch (error: any) {
+    console.error('GSC callback error:', error);
+    res.redirect(`${process.env.FRONTEND_URL}/dashboard?gsc=error`);
+  }
+});
+
+// Apply authentication to all routes below
 router.use(authenticate);
 
 // Get GSC connection status
@@ -24,25 +45,6 @@ router.get('/auth-url', async (req: AuthRequest, res, next) => {
     res.json({ authUrl });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
-  }
-});
-
-// Handle OAuth callback
-router.get('/callback', async (req, res, next) => {
-  try {
-    const { code, state: userId } = req.query;
-
-    if (!code || !userId) {
-      return res.status(400).json({ error: 'Missing code or state parameter' });
-    }
-
-    await GSCService.handleCallback(code as string, userId as string);
-
-    // Redirect to frontend success page
-    res.redirect(`${process.env.FRONTEND_URL}/dashboard?gsc=connected`);
-  } catch (error: any) {
-    console.error('GSC callback error:', error);
-    res.redirect(`${process.env.FRONTEND_URL}/dashboard?gsc=error`);
   }
 });
 
