@@ -54,6 +54,7 @@ model Project {
   competitors  Competitor[]
   webhooks     Webhook[]
   notificationRules NotificationRule[]
+  goals        Goal[]
   
   @@unique([userId, domain], name: "userId_domain")
   @@index([userId])
@@ -416,6 +417,38 @@ model AuditSnapshot {
   @@index([projectId])
   @@index([capturedAt])
   @@map("audit_snapshots")
+}
+
+model Goal {
+  id            String       @id @default(cuid())
+  projectId     String       @map("project_id")
+  name          String
+  targetScore   Int          @map("target_score")
+  category      GoalCategory @default(OVERALL)
+  deadline      DateTime?
+  achieved      Boolean      @default(false)
+  achievedAt    DateTime?    @map("achieved_at")
+  achievedScore Int?         @map("achieved_score")
+  description   String?      @db.Text
+  metadata      Json         @default("{}")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+  
+  project       Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  @@index([projectId])
+  @@index([achieved])
+  @@index([deadline])
+  @@map("goals")
+}
+
+enum GoalCategory {
+  OVERALL
+  PERFORMANCE
+  TECHNICAL
+  ON_PAGE
+  STRUCTURED_DATA
+  LOCAL_SEO
 }
 
 enum RecommendationCategory {

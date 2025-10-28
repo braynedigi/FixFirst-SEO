@@ -335,3 +335,27 @@ export const notificationsApi = {
   deleteRule: (id: string) => api.delete(`/api/notifications/rules/${id}`),
 };
 
+// Goals API
+export const goalsApi = {
+  getByProject: (projectId: string) => api.get(`/api/goals/project/${projectId}`),
+  getOne: (id: string) => api.get(`/api/goals/${id}`),
+  create: (data: {
+    projectId: string;
+    name: string;
+    targetScore: number;
+    category?: 'OVERALL' | 'PERFORMANCE' | 'TECHNICAL' | 'ON_PAGE' | 'STRUCTURED_DATA' | 'LOCAL_SEO';
+    deadline?: string;
+    description?: string;
+  }) => api.post('/api/goals', data),
+  update: (id: string, data: {
+    name?: string;
+    targetScore?: number;
+    category?: 'OVERALL' | 'PERFORMANCE' | 'TECHNICAL' | 'ON_PAGE' | 'STRUCTURED_DATA' | 'LOCAL_SEO';
+    deadline?: string;
+    description?: string;
+  }) => api.put(`/api/goals/${id}`, data),
+  delete: (id: string) => api.delete(`/api/goals/${id}`),
+  check: (id: string) => api.post(`/api/goals/${id}/check`),
+  getProgress: (id: string) => api.get(`/api/goals/${id}/progress`),
+};
+
