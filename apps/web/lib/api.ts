@@ -287,3 +287,15 @@ export const emailTemplatesApi = {
   reset: (key: string) => api.post(`/api/email-templates/${key}/reset`),
 };
 
+// Webhooks API
+export const webhooksApi = {
+  getAll: (projectId?: string) => 
+    api.get('/api/webhooks', { params: projectId ? { projectId } : {} }),
+  create: (data: { projectId?: string; url: string; events: string[]; secret?: string }) =>
+    api.post('/api/webhooks', data),
+  update: (id: string, data: { url?: string; events?: string[]; enabled?: boolean; secret?: string }) =>
+    api.put(`/api/webhooks/${id}`, data),
+  delete: (id: string) => api.delete(`/api/webhooks/${id}`),
+  test: (id: string) => api.post(`/api/webhooks/${id}/test`),
+};
+

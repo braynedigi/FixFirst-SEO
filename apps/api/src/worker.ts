@@ -8,6 +8,7 @@ import { calculateTotalScore, calculateCategoryScores } from '@seo-audit/shared'
 import { emailService } from './services/email-service';
 import { slackService } from './services/slack-service';
 import { sendAuditCompletionEmail } from './services/emailService';
+import { webhookService } from './services/webhookService';
 import { io as ioClient } from 'socket.io-client';
 
 dotenv.config();
@@ -231,6 +232,27 @@ async function processAudit(job: Job<AuditJobData>) {
 
     console.log(`[Worker] Completed audit ${auditId} with score ${totalScore}`);
 
+    // Trigger webhooks for audit completion
+    try {
+      const webhooks = await prisma.webhook.findMany({
+        where: { projectId, enabled: true },
+      });
+      
+      if (webhooks.length > 0) {
+        await webhookService.triggerWebhooks(webhooks, 'audit.completed', {
+          auditId,
+          url,
+          projectId,
+          totalScore,
+          categoryScores,
+          timestamp: new Date().toISOString(),
+        });
+      }
+    } catch (webhookError) {
+      console.error(`[Worker] Failed to trigger webhooks:`, webhookError);
+      // Don't fail the audit if webhooks fail
+    }
+
     // Send completion email if enabled
     try {
       // Send email notification using new email service
@@ -330,6 +352,28 @@ async function processAudit(job: Job<AuditJobData>) {
         message: `Audit failed after ${failedAudit?.retryCount || 0} retries: ${error.message}`,
         error: error.message,
       }});
+
+      // Trigger webhooks for audit failure
+      if (failedAudit?.projectId) {
+        try {
+          const webhooks = await prisma.webhook.findMany({
+            where: { projectId: failedAudit.projectId, enabled: true },
+          });
+          
+          if (webhooks.length > 0) {
+            await webhookService.triggerWebhooks(webhooks, 'audit.failed', {
+              auditId,
+              url: failedAudit.url,
+              projectId: failedAudit.projectId,
+              error: error.message,
+              retryCount: failedAudit.retryCount,
+              timestamp: new Date().toISOString(),
+            });
+          }
+        } catch (webhookError) {
+          console.error(`[Worker] Failed to trigger failure webhooks:`, webhookError);
+        }
+      }
     }
 
     // Send failure email if enabled

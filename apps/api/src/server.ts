@@ -23,6 +23,7 @@ import { settingsRoutes } from './routes/settings';
 import { reportsRoutes } from './routes/reports';
 import { profileRoutes } from './routes/profile';
 import { emailTemplatesRoutes } from './routes/email-templates';
+import webhooksRoutes from './routes/webhooks';
 import { errorHandler } from './middleware/error-handler';
 import { rateLimiter } from './middleware/rate-limiter';
 import { websocketService } from './services/websocket-service';
@@ -106,6 +107,7 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/email-templates', emailTemplatesRoutes);
+app.use('/api/webhooks', webhooksRoutes);
 
 // Error handling
 app.use(errorHandler);
