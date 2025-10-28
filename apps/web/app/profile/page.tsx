@@ -6,8 +6,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { profileApi, authApi } from '@/lib/api'
 import toast from 'react-hot-toast'
 import { User, Mail, Lock, Bell, MessageSquare, Shield, ArrowLeft, Eye, EyeOff } from 'lucide-react'
+import SecurityTab from './SecurityTab'
 
-type TabType = 'profile' | 'password' | 'notifications' | 'integrations'
+type TabType = 'profile' | 'password' | 'security' | 'notifications' | 'integrations'
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -71,6 +72,12 @@ export default function ProfilePage() {
             onClick={() => setActiveTab('password')}
           />
           <TabButton
+            icon={<Shield />}
+            label="Security"
+            active={activeTab === 'security'}
+            onClick={() => setActiveTab('security')}
+          />
+          <TabButton
             icon={<Bell />}
             label="Notifications"
             active={activeTab === 'notifications'}
@@ -87,6 +94,7 @@ export default function ProfilePage() {
         {/* Content */}
         {activeTab === 'profile' && <ProfileTab profile={profile} />}
         {activeTab === 'password' && <PasswordTab />}
+        {activeTab === 'security' && <SecurityTab />}
         {activeTab === 'notifications' && <NotificationsTab />}
         {activeTab === 'integrations' && <IntegrationsTab profile={profile} />}
       </div>

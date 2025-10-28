@@ -12,6 +12,8 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [requires2FA, setRequires2FA] = useState(false)
+  const [twoFactorCode, setTwoFactorCode] = useState('')
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -19,9 +21,20 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      const response = await authApi.login(email, password)
+      const response = await authApi.login(email, password, requires2FA ? twoFactorCode : undefined)
+      
+      // Check if 2FA is required
+      if (response.data.requires2FA) {
+        setRequires2FA(true)
+        toast.info('Please enter your 2FA code')
+        setLoading(false)
+        return
+      }
+
+      // Login successful
       localStorage.setItem('token', response.data.token)
       localStorage.setItem('user', JSON.stringify(response.data.user))
+      localStorage.setItem('userEmail', response.data.user.email)
       toast.success('Logged in successfully!')
       router.push('/dashboard')
     } catch (error: any) {
@@ -57,12 +70,14 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="input pr-10"
                 required
+                disabled={requires2FA}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors"
                 tabIndex={-1}
+                disabled={requires2FA}
               >
                 {showPassword ? (
                   <EyeOff className="w-5 h-5" />
@@ -73,12 +88,31 @@ export default function LoginPage() {
             </div>
           </div>
 
+          {requires2FA && (
+            <div>
+              <label className="block text-sm font-medium mb-2">Two-Factor Code</label>
+              <input
+                type="text"
+                value={twoFactorCode}
+                onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                className="input font-mono text-lg tracking-wider text-center"
+                placeholder="000000"
+                maxLength={6}
+                required
+                autoFocus
+              />
+              <p className="text-sm text-text-secondary mt-1">
+                Enter the 6-digit code from your authenticator app
+              </p>
+            </div>
+          )}
+
           <button
             type="submit"
             className="btn-primary w-full"
-            disabled={loading}
+            disabled={loading || (requires2FA && twoFactorCode.length !== 6)}
           >
-            {loading ? 'Logging in...' : 'Log In'}
+            {loading ? 'Logging in...' : requires2FA ? 'Verify 2FA Code' : 'Log In'}
           </button>
         </form>
 

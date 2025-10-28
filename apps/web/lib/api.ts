@@ -24,9 +24,19 @@ api.interceptors.request.use((config) => {
 export const authApi = {
   register: (email: string, password: string) =>
     api.post('/api/auth/register', { email, password }),
-  login: (email: string, password: string) =>
-    api.post('/api/auth/login', { email, password }),
+  login: (email: string, password: string, twoFactorToken?: string) =>
+    api.post('/api/auth/login', { email, password, twoFactorToken }),
   me: () => api.get('/api/auth/me'),
+};
+
+// Two-Factor Authentication API
+export const twoFactorApi = {
+  getStatus: () => api.get('/api/2fa/status'),
+  setup: (email: string) => api.post('/api/2fa/setup', { email }),
+  enable: (secret: string, token: string) => api.post('/api/2fa/enable', { secret, token }),
+  disable: (token: string) => api.post('/api/2fa/disable', { token }),
+  verify: (token: string) => api.post('/api/2fa/verify', { token }),
+  regenerateBackupCodes: (token: string) => api.post('/api/2fa/backup-codes/regenerate', { token }),
 };
 
 // Projects API
