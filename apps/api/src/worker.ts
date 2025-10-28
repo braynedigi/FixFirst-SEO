@@ -273,22 +273,64 @@ async function processAudit(job: Job<AuditJobData>) {
   } catch (error: any) {
     console.error(`[Worker] Error processing audit ${auditId}:`, error);
     
-    await prisma.audit.update({
+    // Get current audit to check retry count
+    const failedAudit = await prisma.audit.findUnique({
       where: { id: auditId },
-      data: {
-        status: 'FAILED',
-        completedAt: new Date(),
-        metadata: { error: error.message },
-      },
+      select: { retryCount: true, maxRetries: true, url: true, projectId: true },
     });
 
-    // Emit failure via WebSocket
-    socket.emit('worker-audit-update', { auditId, data: {
-      status: 'FAILED',
-      progress: 100,
-      message: `Audit failed: ${error.message}`,
-      error: error.message,
-    }});
+    const canRetry = failedAudit && failedAudit.retryCount < failedAudit.maxRetries;
+
+    if (canRetry) {
+      // Increment retry count and queue for retry with exponential backoff
+      const retryCount = failedAudit.retryCount + 1;
+      const retryDelayMs = Math.pow(2, retryCount) * 1000; // 2s, 4s, 8s delays
+      
+      await prisma.audit.update({
+        where: { id: auditId },
+        data: {
+          status: 'QUEUED',
+          retryCount,
+          errorMessage: `Retry ${retryCount}/${failedAudit.maxRetries}: ${error.message}`,
+        },
+      });
+
+      console.log(`[Worker] ⚡ Scheduling retry ${retryCount}/${failedAudit.maxRetries} for audit ${auditId} in ${retryDelayMs}ms`);
+      
+      // Re-queue with delay
+      setTimeout(() => {
+        redisClient.rPush('audit-queue', auditId);
+        console.log(`[Worker] 🔄 Re-queued audit ${auditId} for retry ${retryCount}`);
+      }, retryDelayMs);
+
+      // Emit retry status via WebSocket
+      socket.emit('worker-audit-update', { auditId, data: {
+        status: 'QUEUED',
+        progress: 0,
+        message: `Retrying audit (${retryCount}/${failedAudit.maxRetries})...`,
+        retrying: true,
+        retryCount,
+      }});
+    } else {
+      // Max retries reached or no retries available
+      await prisma.audit.update({
+        where: { id: auditId },
+        data: {
+          status: 'FAILED',
+          completedAt: new Date(),
+          errorMessage: error.message,
+          metadata: { error: error.message, retriesExhausted: failedAudit?.retryCount >= failedAudit?.maxRetries },
+        },
+      });
+
+      // Emit failure via WebSocket
+      socket.emit('worker-audit-update', { auditId, data: {
+        status: 'FAILED',
+        progress: 100,
+        message: `Audit failed after ${failedAudit?.retryCount || 0} retries: ${error.message}`,
+        error: error.message,
+      }});
+    }
 
     // Send failure email if enabled
     try {

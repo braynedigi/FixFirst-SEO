@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { auditsApi, projectsApi, teamsApi, comparisonApi } from '@/lib/api'
 import toast from 'react-hot-toast'
 import { formatDateTime, getScoreColor, getScoreGrade } from '@/lib/utils'
-import { Plus, LogOut, Settings, BarChart3, Clock, CheckCircle2, AlertCircle, Trash2, RotateCcw, Shield, Calendar, Upload, FolderOpen, ExternalLink, Mail, Star, Filter, Copy, Check } from 'lucide-react'
+import { Plus, LogOut, Settings, BarChart3, Clock, CheckCircle2, AlertCircle, Trash2, RotateCcw, Shield, Calendar, Upload, FolderOpen, ExternalLink, Mail, Star, Filter, Copy, Check, Search, X } from 'lucide-react'
 import TrendChart from '@/components/TrendChart'
 import ThemeToggle from '@/components/ThemeToggle'
 import BulkUploadModal from '@/components/BulkUploadModal'
@@ -24,6 +24,8 @@ export default function DashboardPage() {
   const [userRole, setUserRole] = useState<string | null>(null)
   const [projectFilter, setProjectFilter] = useState<'all' | 'favorites'>('all')
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [auditStatusFilter, setAuditStatusFilter] = useState<'all' | 'COMPLETED' | 'FAILED' | 'RUNNING'>('all')
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -192,6 +194,32 @@ export default function DashboardPage() {
       : 0,
   }
 
+  // Filter projects based on search and filter
+  const filteredProjects = projects?.filter((project: any) => {
+    // Search filter
+    const matchesSearch = !searchQuery || 
+      project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      project.domain.toLowerCase().includes(searchQuery.toLowerCase())
+    
+    // Favorite filter
+    const matchesFavorite = projectFilter === 'all' || project.isFavorite
+    
+    return matchesSearch && matchesFavorite
+  }) || []
+
+  // Filter audits based on search and status
+  const filteredAudits = audits?.filter((audit: any) => {
+    // Search filter
+    const matchesSearch = !searchQuery || 
+      audit.url.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      audit.project?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+    
+    // Status filter
+    const matchesStatus = auditStatusFilter === 'all' || audit.status === auditStatusFilter
+    
+    return matchesSearch && matchesStatus
+  }) || []
+
   return (
     <div className="min-h-screen">
       {/* Sidebar */}
@@ -263,25 +291,47 @@ export default function DashboardPage() {
       <main className="ml-64 p-8">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
-          <div className="flex justify-between items-center mb-8">
-            <h2 className="text-3xl font-bold bg-gradient-to-r from-primary via-accent to-success bg-clip-text text-transparent">Dashboard</h2>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setShowBulkUploadModal(true)}
-                className="btn-secondary flex items-center gap-2"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
-                Bulk Upload
-              </button>
-              <button
-                onClick={() => setShowNewAuditModal(true)}
-                className="btn-primary flex items-center gap-2"
-              >
-                <Plus className="w-5 h-5" />
-                New Audit
-              </button>
+          <div className="mb-8">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-primary via-accent to-success bg-clip-text text-transparent">Dashboard</h2>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setShowBulkUploadModal(true)}
+                  className="btn-secondary flex items-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                  Bulk Upload
+                </button>
+                <button
+                  onClick={() => setShowNewAuditModal(true)}
+                  className="btn-primary flex items-center gap-2"
+                >
+                  <Plus className="w-5 h-5" />
+                  New Audit
+                </button>
+              </div>
+            </div>
+
+            {/* Search Bar */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-text-secondary" />
+              <input
+                type="text"
+                placeholder="Search projects and audits..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="input w-full pl-10 pr-10"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-secondary hover:text-text-primary"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </div>
 
@@ -437,10 +487,9 @@ export default function DashboardPage() {
 
             {projects && projects.length > 0 ? (
               <>
-                {projects.filter((p: any) => projectFilter === 'all' || p.isFavorite).length > 0 ? (
+                {filteredProjects.length > 0 ? (
                   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {projects
-                      .filter((project: any) => projectFilter === 'all' || project.isFavorite)
+                    {filteredProjects
                       .map((project: any) => (
                       <div
                         key={project.id}
@@ -492,8 +541,20 @@ export default function DashboardPage() {
                   </div>
                 ) : (
                   <div className="text-center py-12">
-                    <Star className="w-12 h-12 text-text-secondary mx-auto mb-4" />
-                    <p className="text-text-secondary mb-4">No favorite projects yet. Star a project to add it here!</p>
+                    {searchQuery ? (
+                      <>
+                        <Search className="w-12 h-12 text-text-secondary mx-auto mb-4" />
+                        <p className="text-text-secondary mb-4">No projects found matching "{searchQuery}"</p>
+                        <button onClick={() => setSearchQuery('')} className="btn-secondary text-sm">
+                          Clear Search
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <Star className="w-12 h-12 text-text-secondary mx-auto mb-4" />
+                        <p className="text-text-secondary mb-4">No favorite projects yet. Star a project to add it here!</p>
+                      </>
+                    )}
                   </div>
                 )}
               </>
@@ -513,29 +574,78 @@ export default function DashboardPage() {
 
           {/* Recent Audits */}
           <div className="card">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold">Recent Audits</h3>
-              
-              {audits && audits.filter((a: any) => a.status === 'FAILED').length > 0 && (
-                <button
-                  onClick={async () => {
-                    if (confirm('Are you sure you want to delete all failed audits?')) {
-                      try {
-                        toast.loading('Deleting failed audits...', { id: 'delete-failed' })
-                        await auditsApi.deleteFailed()
-                        toast.success('Failed audits deleted!', { id: 'delete-failed' })
-                        refetchAudits()
-                      } catch (error) {
-                        toast.error('Failed to delete audits', { id: 'delete-failed' })
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold">Recent Audits</h3>
+                
+                {audits && audits.filter((a: any) => a.status === 'FAILED').length > 0 && (
+                  <button
+                    onClick={async () => {
+                      if (confirm('Are you sure you want to delete all failed audits?')) {
+                        try {
+                          toast.loading('Deleting failed audits...', { id: 'delete-failed' })
+                          await auditsApi.deleteFailed()
+                          toast.success('Failed audits deleted!', { id: 'delete-failed' })
+                          refetchAudits()
+                        } catch (error) {
+                          toast.error('Failed to delete audits', { id: 'delete-failed' })
+                        }
                       }
-                    }
-                  }}
-                  className="btn-secondary text-sm flex items-center gap-2"
+                    }}
+                    className="btn-secondary text-sm flex items-center gap-2"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Clear Failed Audits
+                  </button>
+                )}
+              </div>
+
+              {/* Status Filter Tabs */}
+              <div className="flex items-center gap-2 bg-background-secondary rounded-lg p-1">
+                <button
+                  onClick={() => setAuditStatusFilter('all')}
+                  className={`px-3 py-1 rounded text-sm transition-colors ${
+                    auditStatusFilter === 'all' 
+                      ? 'bg-primary text-white' 
+                      : 'text-text-secondary hover:text-text-primary'
+                  }`}
                 >
-                  <Trash2 className="w-4 h-4" />
-                  Clear Failed Audits
+                  All
                 </button>
-              )}
+                <button
+                  onClick={() => setAuditStatusFilter('COMPLETED')}
+                  className={`px-3 py-1 rounded text-sm transition-colors flex items-center gap-1 ${
+                    auditStatusFilter === 'COMPLETED' 
+                      ? 'bg-success text-white' 
+                      : 'text-text-secondary hover:text-text-primary'
+                  }`}
+                >
+                  <CheckCircle2 className="w-3 h-3" />
+                  Completed
+                </button>
+                <button
+                  onClick={() => setAuditStatusFilter('RUNNING')}
+                  className={`px-3 py-1 rounded text-sm transition-colors flex items-center gap-1 ${
+                    auditStatusFilter === 'RUNNING' 
+                      ? 'bg-primary text-white' 
+                      : 'text-text-secondary hover:text-text-primary'
+                  }`}
+                >
+                  <Clock className="w-3 h-3" />
+                  Running
+                </button>
+                <button
+                  onClick={() => setAuditStatusFilter('FAILED')}
+                  className={`px-3 py-1 rounded text-sm transition-colors flex items-center gap-1 ${
+                    auditStatusFilter === 'FAILED' 
+                      ? 'bg-error text-white' 
+                      : 'text-text-secondary hover:text-text-primary'
+                  }`}
+                >
+                  <AlertCircle className="w-3 h-3" />
+                  Failed
+                </button>
+              </div>
             </div>
             
             {auditsLoading ? (
@@ -544,8 +654,9 @@ export default function DashboardPage() {
                 <p className="text-text-secondary mt-4">Loading audits...</p>
               </div>
             ) : audits && audits.length > 0 ? (
-              <div className="space-y-4">
-                {audits.map((audit: any) => (
+              filteredAudits.length > 0 ? (
+                <div className="space-y-4">
+                  {filteredAudits.map((audit: any) => (
                   <AuditRow
                     key={audit.id}
                     audit={audit}
@@ -575,6 +686,23 @@ export default function DashboardPage() {
                   />
                 ))}
               </div>
+              ) : (
+                <div className="text-center py-12">
+                  <Search className="w-12 h-12 text-text-secondary mx-auto mb-4" />
+                  <p className="text-text-secondary mb-4">
+                    No audits found matching your filters
+                  </p>
+                  <button 
+                    onClick={() => {
+                      setSearchQuery('')
+                      setAuditStatusFilter('all')
+                    }} 
+                    className="btn-secondary text-sm"
+                  >
+                    Clear Filters
+                  </button>
+                </div>
+              )
             ) : (
               <div className="text-center py-12">
                 <AlertCircle className="w-12 h-12 text-text-secondary mx-auto mb-4" />
