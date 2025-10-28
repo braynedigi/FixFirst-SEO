@@ -1,62 +1,49 @@
 # Dependencies
 node_modules
-*/node_modules
-**/node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Build outputs
+# Next.js
 .next
+out
+
+# Production
 dist
 build
-*.tsbuildinfo
 
-# Development files
+# Misc
+.DS_Store
+*.pem
 .env
 .env.local
-.env.development
 .env.development.local
 .env.test.local
-*.log
-npm-debug.log*
-
-# IDE
-.vscode
-.idea
-*.swp
-*.swo
-*~
-
-# OS files
-.DS_Store
-Thumbs.db
+.env.production.local
 
 # Git
 .git
 .gitignore
 
-# Documentation (not needed in containers)
-docs
-*.md
-!README.md
+# IDEs
+.vscode
+.idea
+*.swp
+*.swo
 
-# Test files
-**/*.test.ts
-**/*.test.tsx
-**/*.spec.ts
-**/*.spec.tsx
+# Testing
 coverage
+.nyc_output
 
-# Misc
-.prettierrc
-.eslintrc*
-.editorconfig
+# Logs
+logs
+*.log
 
-# Uploads (should be in volumes)
-apps/api/uploads/*
+# Documentation
+*.md
+docs/
 
-# Database
-prisma/migrations
-*.db
-*.sqlite
-
-# Redis
-dump.rdb
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
