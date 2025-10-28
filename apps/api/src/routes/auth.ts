@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import { emailService } from '../services/email-service';
+import TwoFactorService from '../services/twoFactorService';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -16,6 +17,7 @@ const registerSchema = z.object({
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string(),
+  twoFactorToken: z.string().optional(),
 });
 
 // Register
@@ -66,9 +68,20 @@ router.post('/register', async (req, res, next) => {
 // Login
 router.post('/login', async (req, res, next) => {
   try {
-    const { email, password } = loginSchema.parse(req.body);
+    const { email, password, twoFactorToken } = loginSchema.parse(req.body);
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+        passwordHash: true,
+        role: true,
+        planTier: true,
+        twoFactorEnabled: true,
+      },
+    });
+
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
@@ -78,6 +91,24 @@ router.post('/login', async (req, res, next) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
+    // Check if 2FA is enabled
+    if (user.twoFactorEnabled) {
+      // If 2FA is enabled but no token provided, request it
+      if (!twoFactorToken) {
+        return res.status(200).json({
+          requires2FA: true,
+          message: 'Two-factor authentication required',
+        });
+      }
+
+      // Verify the 2FA token
+      const is2FAValid = await TwoFactorService.verify2FALogin(user.id, twoFactorToken);
+      if (!is2FAValid) {
+        return res.status(401).json({ error: 'Invalid two-factor authentication token' });
+      }
+    }
+
+    // Generate JWT token
     const token = jwt.sign(
       { userId: user.id },
       process.env.JWT_SECRET || 'dev-secret',

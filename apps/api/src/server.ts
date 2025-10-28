@@ -29,6 +29,7 @@ import { goalsRoutes } from './routes/goals';
 import { keywordsRoutes } from './routes/keywords';
 import { keywordGroupsRoutes } from './routes/keywordGroups';
 import { gscRoutes } from './routes/gsc';
+import { twoFactorRoutes } from './routes/twoFactor';
 import { errorHandler } from './middleware/error-handler';
 import { rateLimiter } from './middleware/rate-limiter';
 import { websocketService } from './services/websocket-service';
@@ -118,6 +119,7 @@ app.use('/api/goals', goalsRoutes);
 app.use('/api/keywords', keywordsRoutes);
 app.use('/api/keyword-groups', keywordGroupsRoutes);
 app.use('/api/gsc', gscRoutes);
+app.use('/api/2fa', twoFactorRoutes);
 
 // Error handling
 app.use(errorHandler);
