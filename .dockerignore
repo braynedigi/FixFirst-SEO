@@ -1,0 +1,62 @@
+# Dependencies
+node_modules
+*/node_modules
+**/node_modules
+
+# Build outputs
+.next
+dist
+build
+*.tsbuildinfo
+
+# Development files
+.env
+.env.local
+.env.development
+.env.development.local
+.env.test.local
+*.log
+npm-debug.log*
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+
+# Documentation (not needed in containers)
+docs
+*.md
+!README.md
+
+# Test files
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+coverage
+
+# Misc
+.prettierrc
+.eslintrc*
+.editorconfig
+
+# Uploads (should be in volumes)
+apps/api/uploads/*
+
+# Database
+prisma/migrations
+*.db
+*.sqlite
+
+# Redis
+dump.rdb

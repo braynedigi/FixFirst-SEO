@@ -1,0 +1,455 @@
+// Prisma schema for SEO Audit Tool
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                      String    @id @default(cuid())
+  email                   String    @unique
+  passwordHash            String    @map("password_hash")
+  role                    Role      @default(USER)
+  planTier                PlanTier  @default(FREE) @map("plan_tier")
+  apiKeyHash              String?   @map("api_key_hash")
+  apiKeyCreatedAt         DateTime? @map("api_key_created_at")
+  notificationPreferences Json?     @map("notification_preferences")
+  slackWebhookUrl         String?   @map("slack_webhook_url")
+  createdAt               DateTime  @default(now()) @map("created_at")
+  updatedAt               DateTime  @updatedAt @map("updated_at")
+  
+  projects                Project[]
+  schedules               Schedule[]
+  projectMembers          ProjectMember[]
+  comments                Comment[]
+  activities              Activity[]
+  invitationsSent         Invitation[] @relation("InvitedBy")
+  
+  @@map("users")
+}
+
+model Project {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  domain    String
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  audits       Audit[]
+  schedules    Schedule[]
+  members      ProjectMember[]
+  activities   Activity[]
+  invitations  Invitation[]
+  competitors  Competitor[]
+  
+  @@unique([userId, domain], name: "userId_domain")
+  @@index([userId])
+  @@map("projects")
+}
+
+model Audit {
+  id                   String       @id @default(cuid())
+  projectId            String       @map("project_id")
+  url                  String
+  status               AuditStatus  @default(QUEUED)
+  totalScore           Int?         @map("total_score")
+  technicalScore       Int?         @map("technical_score")
+  onPageScore          Int?         @map("on_page_score")
+  structuredDataScore  Int?         @map("structured_data_score")
+  performanceScore     Int?         @map("performance_score")
+  localSeoScore        Int?         @map("local_seo_score")
+  psiData              Json?        @map("psi_data")
+  startedAt            DateTime     @default(now()) @map("started_at")
+  completedAt          DateTime?    @map("completed_at")
+  metadata             Json         @default("{}")
+  
+  project              Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  pages                Page[]
+  issues               Issue[]
+  
+  @@index([projectId])
+  @@index([status])
+  @@map("audits")
+}
+
+model Page {
+  id           String    @id @default(cuid())
+  auditId      String    @map("audit_id")
+  url          String
+  statusCode   Int       @map("status_code")
+  crawledAt    DateTime  @default(now()) @map("crawled_at")
+  htmlSnapshot String?   @map("html_snapshot") @db.Text
+  loadTime     Int?      @map("load_time")
+  pageSize     Int?      @map("page_size")
+  
+  audit        Audit     @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  issues       Issue[]
+  
+  @@index([auditId])
+  @@map("pages")
+}
+
+model Issue {
+  id             String         @id @default(cuid())
+  auditId        String         @map("audit_id")
+  pageId         String?        @map("page_id")
+  ruleId         String         @map("rule_id")
+  severity       IssueSeverity
+  message        String
+  recommendation String         @db.Text
+  metadata       Json           @default("{}")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  
+  audit          Audit          @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  page           Page?          @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  rule           Rule           @relation(fields: [ruleId], references: [id])
+  comments       Comment[]
+  
+  @@index([auditId])
+  @@index([ruleId])
+  @@map("issues")
+}
+
+model Rule {
+  id          String        @id @default(cuid())
+  category    RuleCategory
+  name        String
+  description String        @db.Text
+  weight      Int
+  isActive    Boolean       @default(true) @map("is_active")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  
+  issues      Issue[]
+  
+  @@index([category])
+  @@map("rules")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum PlanTier {
+  FREE
+  PRO
+  AGENCY
+}
+
+enum AuditStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum IssueSeverity {
+  CRITICAL
+  WARNING
+  INFO
+}
+
+enum RuleCategory {
+  TECHNICAL
+  ONPAGE
+  STRUCTURED_DATA
+  PERFORMANCE
+  LOCAL_SEO
+}
+
+model Settings {
+  id              String   @id @default("branding")
+  appName         String   @default("FixFirst SEO") @map("app_name")
+  logoUrl         String?  @map("logo_url")
+  faviconUrl      String?  @map("favicon_url")
+  primaryColor    String   @default("#06b6d4") @map("primary_color")
+  accentColor     String   @default("#10b981") @map("accent_color")
+  footerText      String   @default("© 2025 FixFirst SEO. Powered By Brayne Smart Solutions Corp.") @map("footer_text")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  
+  @@map("settings")
+}
+
+model Schedule {
+  id              String          @id @default(cuid())
+  userId          String          @map("user_id")
+  projectId       String          @map("project_id")
+  url             String
+  frequency       ScheduleFrequency
+  isActive        Boolean         @default(true) @map("is_active")
+  lastRunAt       DateTime?       @map("last_run_at")
+  nextRunAt       DateTime        @map("next_run_at")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+  
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project         Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([projectId])
+  @@index([nextRunAt])
+  @@map("schedules")
+}
+
+enum ScheduleFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+// Team Collaboration Models
+
+model ProjectMember {
+  id           String           @id @default(cuid())
+  projectId    String           @map("project_id")
+  userId       String           @map("user_id")
+  role         ProjectRole      @default(MEMBER)
+  invitedBy    String?          @map("invited_by")
+  joinedAt     DateTime         @default(now()) @map("joined_at")
+  createdAt    DateTime         @default(now()) @map("created_at")
+  updatedAt    DateTime         @updatedAt @map("updated_at")
+  
+  project      Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([projectId, userId])
+  @@index([projectId])
+  @@index([userId])
+  @@map("project_members")
+}
+
+model Comment {
+  id           String           @id @default(cuid())
+  issueId      String           @map("issue_id")
+  userId       String           @map("user_id")
+  content      String           @db.Text
+  createdAt    DateTime         @default(now()) @map("created_at")
+  updatedAt    DateTime         @updatedAt @map("updated_at")
+  
+  issue        Issue            @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([issueId])
+  @@index([userId])
+  @@map("comments")
+}
+
+model Activity {
+  id           String           @id @default(cuid())
+  projectId    String           @map("project_id")
+  userId       String           @map("user_id")
+  action       ActivityAction
+  entityType   String           @map("entity_type")
+  entityId     String           @map("entity_id")
+  metadata     Json             @default("{}")
+  createdAt    DateTime         @default(now()) @map("created_at")
+  
+  project      Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([projectId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("activities")
+}
+
+model Invitation {
+  id           String           @id @default(cuid())
+  projectId    String           @map("project_id")
+  email        String
+  role         ProjectRole      @default(MEMBER)
+  token        String           @unique
+  invitedBy    String           @map("invited_by")
+  status       InvitationStatus @default(PENDING)
+  expiresAt    DateTime         @map("expires_at")
+  acceptedAt   DateTime?        @map("accepted_at")
+  createdAt    DateTime         @default(now()) @map("created_at")
+  
+  project      Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  inviter      User             @relation("InvitedBy", fields: [invitedBy], references: [id], onDelete: Cascade)
+  
+  @@index([projectId])
+  @@index([email])
+  @@index([token])
+  @@map("invitations")
+}
+
+enum ProjectRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+enum ActivityAction {
+  CREATED
+  UPDATED
+  DELETED
+  INVITED
+  JOINED
+  LEFT
+  COMMENTED
+  COMPLETED
+  STARTED
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+// Analytics & Insights Models
+
+model Competitor {
+  id              String              @id @default(cuid())
+  projectId       String              @map("project_id")
+  name            String
+  domain          String
+  isActive        Boolean             @default(true) @map("is_active")
+  lastAuditedAt   DateTime?           @map("last_audited_at")
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+  
+  project         Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  snapshots       CompetitorSnapshot[]
+  comparisons     CompetitorComparison[]
+  
+  @@unique([projectId, domain])
+  @@index([projectId])
+  @@map("competitors")
+}
+
+model CompetitorSnapshot {
+  id                   String    @id @default(cuid())
+  competitorId         String    @map("competitor_id")
+  totalScore           Int       @map("total_score")
+  technicalScore       Int       @map("technical_score")
+  onPageScore          Int       @map("on_page_score")
+  structuredDataScore  Int       @map("structured_data_score")
+  performanceScore     Int       @map("performance_score")
+  localSeoScore        Int       @map("local_seo_score")
+  metadata             Json      @default("{}")
+  capturedAt           DateTime  @default(now()) @map("captured_at")
+  
+  competitor           Competitor @relation(fields: [competitorId], references: [id], onDelete: Cascade)
+  
+  @@index([competitorId])
+  @@index([capturedAt])
+  @@map("competitor_snapshots")
+}
+
+model CompetitorComparison {
+  id              String    @id @default(cuid())
+  projectId       String    @map("project_id")
+  competitorId    String    @map("competitor_id")
+  auditId         String    @map("audit_id")
+  scoreDelta      Int       @map("score_delta")
+  insights        Json      @default("[]")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  
+  competitor      Competitor @relation(fields: [competitorId], references: [id], onDelete: Cascade)
+  
+  @@index([projectId])
+  @@index([competitorId])
+  @@index([auditId])
+  @@map("competitor_comparisons")
+}
+
+model Recommendation {
+  id              String                @id @default(cuid())
+  auditId         String                @map("audit_id")
+  category        RecommendationCategory
+  priority        RecommendationPriority
+  title           String
+  description     String                @db.Text
+  impact          String                @db.Text
+  effort          String
+  estimatedValue  Int                   @map("estimated_value")
+  isImplemented   Boolean               @default(false) @map("is_implemented")
+  implementedAt   DateTime?             @map("implemented_at")
+  metadata        Json                  @default("{}")
+  createdAt       DateTime              @default(now()) @map("created_at")
+  
+  @@index([auditId])
+  @@index([category])
+  @@index([priority])
+  @@map("recommendations")
+}
+
+model AuditSnapshot {
+  id                   String    @id @default(cuid())
+  auditId              String    @map("audit_id")
+  projectId            String    @map("project_id")
+  totalScore           Int       @map("total_score")
+  technicalScore       Int       @map("technical_score")
+  onPageScore          Int       @map("on_page_score")
+  structuredDataScore  Int       @map("structured_data_score")
+  performanceScore     Int       @map("performance_score")
+  localSeoScore        Int       @map("local_seo_score")
+  issueCount           Int       @map("issue_count")
+  criticalIssues       Int       @map("critical_issues")
+  warningIssues        Int       @map("warning_issues")
+  infoIssues           Int       @map("info_issues")
+  metadata             Json      @default("{}")
+  capturedAt           DateTime  @default(now()) @map("captured_at")
+  
+  @@index([auditId])
+  @@index([projectId])
+  @@index([capturedAt])
+  @@map("audit_snapshots")
+}
+
+enum RecommendationCategory {
+  QUICK_WIN
+  TECHNICAL_IMPROVEMENT
+  CONTENT_OPTIMIZATION
+  PERFORMANCE_BOOST
+  STRUCTURED_DATA
+  MOBILE_OPTIMIZATION
+  LOCAL_SEO
+  SECURITY
+}
+
+enum RecommendationPriority {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+model SystemSettings {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String?
+  description String?
+  isSecret    Boolean  @default(false) @map("is_secret")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  updatedBy   String?  @map("updated_by")
+  
+  @@map("system_settings")
+}
+
+model EmailTemplate {
+  id          String   @id @default(cuid())
+  key         String   @unique // audit-complete, invitation, weekly-digest
+  name        String
+  subject     String
+  htmlContent String   @map("html_content") @db.Text
+  description String?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  updatedBy   String?  @map("updated_by")
+  
+  @@map("email_templates")
+}
+

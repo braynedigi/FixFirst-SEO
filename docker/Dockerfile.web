@@ -1,0 +1,24 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+COPY apps/web/package*.json ./apps/web/
+COPY packages/shared/package*.json ./packages/shared/
+
+# Install dependencies
+RUN npm install
+
+# Copy source code
+COPY . .
+
+# Build shared package
+RUN npm run build --workspace=@seo-audit/shared
+
+# Expose Next.js port
+EXPOSE 3000
+
+# Start Next.js dev server
+CMD ["npm", "run", "dev", "--workspace=@seo-audit/web"]
+
