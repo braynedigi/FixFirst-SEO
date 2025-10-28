@@ -41,6 +41,15 @@ export default function ProjectSettingsPage() {
     },
   });
 
+  // Track project view for "Recently Viewed"
+  useEffect(() => {
+    if (projectId && project) {
+      projectsApi.updateLastViewed(projectId).catch(() => {
+        // Silently fail - this is non-critical
+      });
+    }
+  }, [projectId, project]);
+
   const isOwner = currentUser?.id === project?.userId;
   const isAdmin = false; // TODO: Check if user has ADMIN role in project members
 

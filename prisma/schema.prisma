@@ -33,12 +33,14 @@ model User {
 }
 
 model Project {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
-  domain    String
-  name      String
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id            String    @id @default(cuid())
+  userId        String    @map("user_id")
+  domain        String
+  name          String
+  isFavorite    Boolean   @default(false) @map("is_favorite")
+  lastViewedAt  DateTime? @map("last_viewed_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
   
   user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   audits       Audit[]

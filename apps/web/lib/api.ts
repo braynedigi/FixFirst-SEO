@@ -38,6 +38,8 @@ export const projectsApi = {
   update: (id: string, data: { name: string; domain: string }) =>
     api.put(`/api/projects/${id}`, data),
   delete: (id: string) => api.delete(`/api/projects/${id}`),
+  toggleFavorite: (id: string) => api.patch(`/api/projects/${id}/favorite`),
+  updateLastViewed: (id: string) => api.patch(`/api/projects/${id}/view`),
 };
 
 // Audits API

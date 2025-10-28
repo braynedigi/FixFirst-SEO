@@ -156,6 +156,63 @@ router.put('/:id', authenticate, async (req: AuthRequest, res, next) => {
   }
 });
 
+// Toggle favorite status
+router.patch('/:id/favorite', authenticate, async (req: AuthRequest, res, next) => {
+  try {
+    const project = await prisma.project.findFirst({
+      where: {
+        id: req.params.id,
+        OR: [
+          { userId: req.userId },
+          { members: { some: { userId: req.userId } } },
+        ],
+      },
+    });
+
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+
+    const updatedProject = await prisma.project.update({
+      where: { id: req.params.id },
+      data: { isFavorite: !project.isFavorite },
+      select: { id: true, isFavorite: true },
+    });
+
+    res.json(updatedProject);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Update last viewed timestamp
+router.patch('/:id/view', authenticate, async (req: AuthRequest, res, next) => {
+  try {
+    const project = await prisma.project.findFirst({
+      where: {
+        id: req.params.id,
+        OR: [
+          { userId: req.userId },
+          { members: { some: { userId: req.userId } } },
+        ],
+      },
+    });
+
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+
+    await prisma.project.update({
+      where: { id: req.params.id },
+      data: { lastViewedAt: new Date() },
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Delete project
 router.delete('/:id', authenticate, async (req: AuthRequest, res, next) => {
   try {

@@ -2,24 +2,28 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { auditsApi, projectsApi, teamsApi, comparisonApi } from '@/lib/api'
 import toast from 'react-hot-toast'
 import { formatDateTime, getScoreColor, getScoreGrade } from '@/lib/utils'
-import { Plus, LogOut, Settings, BarChart3, Clock, CheckCircle2, AlertCircle, Trash2, RotateCcw, Shield, Calendar, Upload, FolderOpen, ExternalLink, Mail } from 'lucide-react'
+import { Plus, LogOut, Settings, BarChart3, Clock, CheckCircle2, AlertCircle, Trash2, RotateCcw, Shield, Calendar, Upload, FolderOpen, ExternalLink, Mail, Star, Filter, Copy, Check } from 'lucide-react'
 import TrendChart from '@/components/TrendChart'
 import ThemeToggle from '@/components/ThemeToggle'
 import BulkUploadModal from '@/components/BulkUploadModal'
+import KeyboardShortcuts from '@/components/KeyboardShortcuts'
 import { useBranding } from '@/components/BrandingProvider'
 import Image from 'next/image'
 
 export default function DashboardPage() {
   const router = useRouter()
   const branding = useBranding()
+  const queryClient = useQueryClient()
   const [showNewAuditModal, setShowNewAuditModal] = useState(false)
   const [showBulkUploadModal, setShowBulkUploadModal] = useState(false)
   const [showNewProjectModal, setShowNewProjectModal] = useState(false)
   const [userRole, setUserRole] = useState<string | null>(null)
+  const [projectFilter, setProjectFilter] = useState<'all' | 'favorites'>('all')
+  const [copiedId, setCopiedId] = useState<string | null>(null)
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -115,6 +119,26 @@ export default function DashboardPage() {
     },
   })
 
+  // Toggle favorite mutation
+  const toggleFavoriteMutation = useMutation({
+    mutationFn: (projectId: string) => projectsApi.toggleFavorite(projectId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] })
+      toast.success('Project updated')
+    },
+    onError: () => {
+      toast.error('Failed to update project')
+    },
+  })
+
+  // Copy URL to clipboard
+  const copyToClipboard = (text: string, id: string) => {
+    navigator.clipboard.writeText(text)
+    setCopiedId(id)
+    toast.success('Copied to clipboard!')
+    setTimeout(() => setCopiedId(null), 2000)
+  }
+
   const handleAcceptInvitation = async (token: string, projectName: string) => {
     try {
       toast.loading('Accepting invitation...', { id: token })
@@ -209,13 +233,26 @@ export default function DashboardPage() {
               <ThemeToggle />
             </div>
 
-            {/* Command Palette Hint */}
+            {/* Keyboard Shortcuts Hint */}
             <div className="p-3 bg-background-secondary rounded-lg border border-border">
-              <p className="text-xs text-text-secondary mb-1">Quick Navigation</p>
-              <div className="flex items-center gap-2">
-                <kbd className="px-2 py-1 text-xs bg-background-card rounded border border-border">⌘K</kbd>
-                <span className="text-xs text-text-secondary">or</span>
-                <kbd className="px-2 py-1 text-xs bg-background-card rounded border border-border">Ctrl+K</kbd>
+              <p className="text-xs text-text-secondary mb-2">Keyboard Shortcuts</p>
+              <div className="space-y-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-text-secondary">Command Palette</span>
+                  <kbd className="px-2 py-1 bg-background-card rounded border border-border">⌘K</kbd>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-text-secondary">New Audit</span>
+                  <kbd className="px-2 py-1 bg-background-card rounded border border-border">N</kbd>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-text-secondary">New Project</span>
+                  <kbd className="px-2 py-1 bg-background-card rounded border border-border">P</kbd>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-text-secondary">Show All</span>
+                  <kbd className="px-2 py-1 bg-background-card rounded border border-border">?</kbd>
+                </div>
               </div>
             </div>
           </div>
@@ -321,6 +358,42 @@ export default function DashboardPage() {
             </div>
           )}
 
+          {/* Recently Viewed Projects */}
+          {projects && projects.filter((p: any) => p.lastViewedAt).length > 0 && (
+            <div className="card mb-8">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-semibold flex items-center gap-2">
+                  <Clock className="w-5 h-5" />
+                  Recently Viewed
+                </h3>
+              </div>
+              <div className="flex gap-3 overflow-x-auto pb-2">
+                {projects
+                  .filter((p: any) => p.lastViewedAt)
+                  .sort((a: any, b: any) => 
+                    new Date(b.lastViewedAt).getTime() - new Date(a.lastViewedAt).getTime()
+                  )
+                  .slice(0, 5)
+                  .map((project: any) => (
+                    <div
+                      key={project.id}
+                      onClick={() => router.push(`/project/${project.id}`)}
+                      className="flex-shrink-0 w-64 p-4 border border-border rounded-lg hover:border-primary/50 transition-all hover:shadow-md cursor-pointer group"
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <h4 className="font-semibold group-hover:text-primary transition-colors truncate flex-1">{project.name}</h4>
+                        {project.isFavorite && <Star className="w-4 h-4 fill-warning text-warning flex-shrink-0 ml-2" />}
+                      </div>
+                      <p className="text-sm text-text-secondary truncate mb-2">{project.domain}</p>
+                      <div className="text-xs text-text-muted">
+                        Viewed {new Date(project.lastViewedAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+
           {/* Projects Section */}
           <div className="card mb-8">
             <div className="flex items-center justify-between mb-6">
@@ -328,35 +401,102 @@ export default function DashboardPage() {
                 <FolderOpen className="w-5 h-5" />
                 My Projects
               </h3>
-              <button
-                onClick={() => setShowNewProjectModal(true)}
-                className="btn-primary flex items-center gap-2 text-sm"
-              >
-                <Plus className="w-4 h-4" />
-                New Project
-              </button>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 bg-background-secondary rounded-lg p-1">
+                  <button
+                    onClick={() => setProjectFilter('all')}
+                    className={`px-3 py-1 rounded text-sm transition-colors ${
+                      projectFilter === 'all' 
+                        ? 'bg-primary text-white' 
+                        : 'text-text-secondary hover:text-text-primary'
+                    }`}
+                  >
+                    All
+                  </button>
+                  <button
+                    onClick={() => setProjectFilter('favorites')}
+                    className={`px-3 py-1 rounded text-sm transition-colors flex items-center gap-1 ${
+                      projectFilter === 'favorites' 
+                        ? 'bg-primary text-white' 
+                        : 'text-text-secondary hover:text-text-primary'
+                    }`}
+                  >
+                    <Star className="w-3 h-3" />
+                    Favorites
+                  </button>
+                </div>
+                <button
+                  onClick={() => setShowNewProjectModal(true)}
+                  className="btn-primary flex items-center gap-2 text-sm"
+                >
+                  <Plus className="w-4 h-4" />
+                  New Project
+                </button>
+              </div>
             </div>
 
             {projects && projects.length > 0 ? (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {projects.map((project: any) => (
-                  <div
-                    key={project.id}
-                    className="p-4 border border-border rounded-lg hover:border-primary/50 transition-all hover:shadow-md cursor-pointer group"
-                    onClick={() => router.push(`/project/${project.id}`)}
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <h4 className="font-semibold group-hover:text-primary transition-colors">{project.name}</h4>
-                      <ExternalLink className="w-4 h-4 text-text-secondary opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
-                    <p className="text-sm text-text-secondary mb-3">{project.domain}</p>
-                    <div className="flex items-center justify-between text-xs text-text-secondary">
-                      <span>{project._count?.audits || 0} audits</span>
-                      <span>{project._count?.members || 1} members</span>
-                    </div>
+              <>
+                {projects.filter((p: any) => projectFilter === 'all' || p.isFavorite).length > 0 ? (
+                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {projects
+                      .filter((project: any) => projectFilter === 'all' || project.isFavorite)
+                      .map((project: any) => (
+                      <div
+                        key={project.id}
+                        className="p-4 border border-border rounded-lg hover:border-primary/50 transition-all hover:shadow-md cursor-pointer group relative"
+                        onClick={() => router.push(`/project/${project.id}`)}
+                      >
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            toggleFavoriteMutation.mutate(project.id)
+                          }}
+                          className="absolute top-3 right-3 p-1 hover:bg-background-secondary rounded transition-colors z-10"
+                        >
+                          <Star 
+                            className={`w-5 h-5 transition-colors ${
+                              project.isFavorite 
+                                ? 'fill-warning text-warning' 
+                                : 'text-text-secondary hover:text-warning'
+                            }`} 
+                          />
+                        </button>
+                        <div className="flex items-start justify-between mb-2 pr-8">
+                          <h4 className="font-semibold group-hover:text-primary transition-colors">{project.name}</h4>
+                          <ExternalLink className="w-4 h-4 text-text-secondary opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                        <p className="text-sm text-text-secondary mb-3 flex items-center gap-2">
+                          <span className="truncate">{project.domain}</span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              copyToClipboard(project.domain, project.id)
+                            }}
+                            className="p-1 hover:bg-background-secondary rounded flex-shrink-0"
+                            title="Copy domain"
+                          >
+                            {copiedId === project.id ? (
+                              <Check className="w-3 h-3 text-success" />
+                            ) : (
+                              <Copy className="w-3 h-3" />
+                            )}
+                          </button>
+                        </p>
+                        <div className="flex items-center justify-between text-xs text-text-secondary">
+                          <span>{project._count?.audits || 0} audits</span>
+                          <span>{project._count?.members || 1} members</span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <Star className="w-12 h-12 text-text-secondary mx-auto mb-4" />
+                    <p className="text-text-secondary mb-4">No favorite projects yet. Star a project to add it here!</p>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="text-center py-12">
                 <FolderOpen className="w-12 h-12 text-text-secondary mx-auto mb-4" />
@@ -481,6 +621,13 @@ export default function DashboardPage() {
           }}
         />
       )}
+
+      {/* Keyboard Shortcuts */}
+      <KeyboardShortcuts
+        onNewAudit={() => setShowNewAuditModal(true)}
+        onNewProject={() => setShowNewProjectModal(true)}
+        onBulkUpload={() => setShowBulkUploadModal(true)}
+      />
     </div>
   )
 }
