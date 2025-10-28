@@ -28,6 +28,8 @@ model User {
   comments                Comment[]
   activities              Activity[]
   invitationsSent         Invitation[] @relation("InvitedBy")
+  notifications           Notification[]
+  notificationRules       NotificationRule[]
   
   @@map("users")
 }
@@ -51,7 +53,8 @@ model Project {
   invitations  Invitation[]
   competitors  Competitor[]
   webhooks     Webhook[]
-
+  notificationRules NotificationRule[]
+  
   @@unique([userId, domain], name: "userId_domain")
   @@index([userId])
   @@map("projects")
@@ -474,5 +477,80 @@ model Webhook {
 
   @@index([projectId])
   @@map("webhooks")
+}
+
+model Notification {
+  id          String             @id @default(cuid())
+  userId      String             @map("user_id")
+  type        NotificationType
+  title       String
+  message     String             @db.Text
+  actionUrl   String?            @map("action_url")
+  status      NotificationStatus @default(UNREAD)
+  priority    NotificationPriority @default(NORMAL)
+  metadata    Json               @default("{}")
+  readAt      DateTime?          @map("read_at")
+  createdAt   DateTime           @default(now()) @map("created_at")
+  
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model NotificationRule {
+  id          String              @id @default(cuid())
+  userId      String              @map("user_id")
+  projectId   String?             @map("project_id")
+  name        String
+  event       String              // Event to trigger on
+  conditions  Json                // Conditions to check
+  channels    NotificationChannel[] // How to notify
+  enabled     Boolean             @default(true)
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @updatedAt @map("updated_at")
+  
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project     Project?            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([projectId])
+  @@index([event])
+  @@map("notification_rules")
+}
+
+enum NotificationType {
+  AUDIT_COMPLETED
+  AUDIT_FAILED
+  ISSUE_DETECTED
+  SCORE_IMPROVED
+  SCORE_DECLINED
+  INVITATION_RECEIVED
+  MEMBER_JOINED
+  COMMENT_ADDED
+  SYSTEM_ALERT
+  RECOMMENDATION_AVAILABLE
+}
+
+enum NotificationStatus {
+  UNREAD
+  READ
+  ARCHIVED
+}
+
+enum NotificationPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  SLACK
+  WEBHOOK
 }
 

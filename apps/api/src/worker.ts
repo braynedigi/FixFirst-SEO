@@ -9,6 +9,7 @@ import { emailService } from './services/email-service';
 import { slackService } from './services/slack-service';
 import { sendAuditCompletionEmail } from './services/emailService';
 import { webhookService } from './services/webhookService';
+import { notificationService } from './services/notificationService';
 import { io as ioClient } from 'socket.io-client';
 
 dotenv.config();
@@ -253,6 +254,59 @@ async function processAudit(job: Job<AuditJobData>) {
       // Don't fail the audit if webhooks fail
     }
 
+    // Create notifications for project owner and members
+    try {
+      const project = await prisma.project.findUnique({
+        where: { id: projectId },
+        include: {
+          members: true,
+        },
+      });
+
+      if (project) {
+        const userIds = [project.userId, ...project.members.map(m => m.userId)];
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3005';
+        
+        // Determine priority based on score
+        let priority: 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT' = 'NORMAL';
+        if (totalScore >= 80) priority = 'LOW';
+        else if (totalScore >= 60) priority = 'NORMAL';
+        else if (totalScore >= 40) priority = 'HIGH';
+        else priority = 'URGENT';
+
+        await notificationService.createBulkNotifications(userIds, {
+          type: 'AUDIT_COMPLETED',
+          title: `Audit Completed: ${project.name}`,
+          message: `SEO audit for ${url} completed with a score of ${totalScore}/100`,
+          actionUrl: `${frontendUrl}/audit/${auditId}`,
+          priority,
+          metadata: {
+            auditId,
+            projectId,
+            projectName: project.name,
+            url,
+            totalScore,
+            categoryScores,
+          },
+          channels: ['IN_APP', 'EMAIL'],
+        });
+
+        // Check notification rules
+        await notificationService.checkAndTriggerRules('audit.completed', {
+          auditId,
+          projectId,
+          projectName: project.name,
+          url,
+          totalScore,
+          categoryScores,
+          actionUrl: `${frontendUrl}/audit/${auditId}`,
+        });
+      }
+    } catch (notificationError) {
+      console.error(`[Worker] Failed to create notifications:`, notificationError);
+      // Don't fail the audit if notifications fail
+    }
+
     // Send completion email if enabled
     try {
       // Send email notification using new email service
@@ -372,6 +426,49 @@ async function processAudit(job: Job<AuditJobData>) {
           }
         } catch (webhookError) {
           console.error(`[Worker] Failed to trigger failure webhooks:`, webhookError);
+        }
+
+        // Create failure notifications
+        try {
+          const project = await prisma.project.findUnique({
+            where: { id: failedAudit.projectId },
+            include: { members: true },
+          });
+
+          if (project) {
+            const userIds = [project.userId, ...project.members.map(m => m.userId)];
+            const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3005';
+
+            await notificationService.createBulkNotifications(userIds, {
+              type: 'AUDIT_FAILED',
+              title: `Audit Failed: ${project.name}`,
+              message: `SEO audit for ${failedAudit.url} failed after ${failedAudit.retryCount} retries: ${error.message}`,
+              actionUrl: `${frontendUrl}/project/${failedAudit.projectId}`,
+              priority: 'HIGH',
+              metadata: {
+                auditId,
+                projectId: failedAudit.projectId,
+                projectName: project.name,
+                url: failedAudit.url,
+                error: error.message,
+                retryCount: failedAudit.retryCount,
+              },
+              channels: ['IN_APP', 'EMAIL'],
+            });
+
+            // Check notification rules
+            await notificationService.checkAndTriggerRules('audit.failed', {
+              auditId,
+              projectId: failedAudit.projectId,
+              projectName: project.name,
+              url: failedAudit.url,
+              error: error.message,
+              retryCount: failedAudit.retryCount,
+              actionUrl: `${frontendUrl}/project/${failedAudit.projectId}`,
+            });
+          }
+        } catch (notificationError) {
+          console.error(`[Worker] Failed to create failure notifications:`, notificationError);
         }
       }
     }

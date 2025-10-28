@@ -11,6 +11,7 @@ import TrendChart from '@/components/TrendChart'
 import ThemeToggle from '@/components/ThemeToggle'
 import BulkUploadModal from '@/components/BulkUploadModal'
 import KeyboardShortcuts from '@/components/KeyboardShortcuts'
+import NotificationBell from '@/components/NotificationBell'
 import { useBranding } from '@/components/BrandingProvider'
 import Image from 'next/image'
 
@@ -250,16 +251,19 @@ export default function DashboardPage() {
           </nav>
 
           <div className="mt-8 space-y-3">
-            <div className="flex items-center justify-between">
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-2 text-text-secondary hover:text-text-primary"
-              >
-                <LogOut className="w-5 h-5" />
-                <span>Log Out</span>
-              </button>
-              <ThemeToggle />
-            </div>
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 text-text-secondary hover:text-text-primary"
+                >
+                  <LogOut className="w-5 h-5" />
+                  <span>Log Out</span>
+                </button>
+                <div className="flex items-center gap-2">
+                  <NotificationBell />
+                  <ThemeToggle />
+                </div>
+              </div>
 
             {/* Keyboard Shortcuts Hint */}
             <div className="p-3 bg-background-secondary rounded-lg border border-border">

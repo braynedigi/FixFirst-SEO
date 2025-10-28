@@ -299,3 +299,39 @@ export const webhooksApi = {
   test: (id: string) => api.post(`/api/webhooks/${id}/test`),
 };
 
+// Notifications API
+export const notificationsApi = {
+  getAll: (params?: { status?: string; limit?: number; offset?: number }) =>
+    api.get('/api/notifications', { params }),
+  getUnreadCount: () => api.get('/api/notifications/unread-count'),
+  markAsRead: (id: string) => api.patch(`/api/notifications/${id}/read`),
+  markAllAsRead: () => api.post('/api/notifications/mark-all-read'),
+  archive: (id: string) => api.delete(`/api/notifications/${id}`),
+  
+  // Notification Rules
+  getRules: (projectId?: string) =>
+    api.get('/api/notifications/rules', { params: projectId ? { projectId } : {} }),
+  createRule: (data: {
+    projectId?: string;
+    name: string;
+    event: string;
+    conditions: Array<{
+      field: string;
+      operator: 'eq' | 'ne' | 'gt' | 'lt' | 'gte' | 'lte' | 'contains';
+      value: any;
+    }>;
+    channels: ('IN_APP' | 'EMAIL' | 'SLACK' | 'WEBHOOK')[];
+  }) => api.post('/api/notifications/rules', data),
+  updateRule: (id: string, data: {
+    name?: string;
+    conditions?: Array<{
+      field: string;
+      operator: 'eq' | 'ne' | 'gt' | 'lt' | 'gte' | 'lte' | 'contains';
+      value: any;
+    }>;
+    channels?: ('IN_APP' | 'EMAIL' | 'SLACK' | 'WEBHOOK')[];
+    enabled?: boolean;
+  }) => api.put(`/api/notifications/rules/${id}`, data),
+  deleteRule: (id: string) => api.delete(`/api/notifications/rules/${id}`),
+};
+
