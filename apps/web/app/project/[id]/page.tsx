@@ -7,7 +7,7 @@ import { projectsApi, authApi } from '@/lib/api';
 import TeamManagement from '@/components/TeamManagement';
 import ActivityFeed from '@/components/ActivityFeed';
 import ProjectSettings from '@/components/ProjectSettings';
-import { ArrowLeft, Users, Activity, Settings as SettingsIcon, BarChart3, TrendingUp, Target, Clock } from 'lucide-react';
+import { ArrowLeft, Users, Activity, Settings as SettingsIcon, BarChart3, TrendingUp, Target, Clock, Users2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 type TabType = 'team' | 'activity' | 'settings' | 'analytics';
@@ -140,6 +140,13 @@ export default function ProjectSettingsPage() {
             >
               <Clock className="w-4 h-4" />
               Schedules
+            </button>
+            <button
+              onClick={() => router.push(`/project/${projectId}/competitors`)}
+              className="pb-3 px-2 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 text-text-muted border-transparent hover:text-text-primary"
+            >
+              <Users2 className="w-4 h-4" />
+              Competitors
             </button>
             <button
               onClick={() => setActiveTab('settings')}
