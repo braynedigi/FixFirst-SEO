@@ -242,6 +242,7 @@ export default function DashboardPage() {
           
           <nav className="space-y-2">
             <NavItem icon={<BarChart3 />} label="Dashboard" active />
+            <NavItem icon={<BarChart3 />} label="Analytics" onClick={() => router.push('/analytics')} />
             <NavItem icon={<Calendar />} label="Scheduled Audits" onClick={() => router.push('/schedules')} />
             <NavItem icon={<Upload />} label="Bulk Upload" onClick={() => setShowBulkUploadModal(true)} />
             <NavItem icon={<Settings />} label="Settings" onClick={() => router.push('/settings')} />
