@@ -426,3 +426,17 @@ export const gscApi = {
   disconnect: () => api.post('/api/gsc/disconnect'),
 };
 
+// Dashboard Analytics API
+export const dashboardAnalyticsApi = {
+  getOverview: (days?: number) => 
+    api.get('/api/dashboard-analytics/overview', { params: { days } }),
+  getTrends: (days?: number, projectId?: string) => 
+    api.get('/api/dashboard-analytics/trends', { params: { days, projectId } }),
+  getProjectComparison: () => 
+    api.get('/api/dashboard-analytics/project-comparison'),
+  getScoreDistribution: () => 
+    api.get('/api/dashboard-analytics/score-distribution'),
+  getActivitySummary: (days?: number) => 
+    api.get('/api/dashboard-analytics/activity-summary', { params: { days } }),
+};
+
