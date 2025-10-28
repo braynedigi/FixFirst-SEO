@@ -359,3 +359,60 @@ export const goalsApi = {
   getProgress: (id: string) => api.get(`/api/goals/${id}/progress`),
 };
 
+// Keywords API
+export const keywordsApi = {
+  getByProject: (projectId: string) => api.get(`/api/keywords/project/${projectId}`),
+  getOne: (id: string) => api.get(`/api/keywords/${id}`),
+  create: (data: {
+    projectId: string;
+    groupId?: string;
+    keyword: string;
+    targetUrl?: string;
+    device?: 'DESKTOP' | 'MOBILE' | 'TABLET';
+    location?: string;
+    language?: string;
+  }) => api.post('/api/keywords', data),
+  bulkCreate: (data: {
+    projectId: string;
+    groupId?: string;
+    keywords: string[];
+    device?: 'DESKTOP' | 'MOBILE' | 'TABLET';
+    location?: string;
+  }) => api.post('/api/keywords/bulk', data),
+  update: (id: string, data: {
+    groupId?: string | null;
+    targetUrl?: string | null;
+    isTracking?: boolean;
+  }) => api.patch(`/api/keywords/${id}`, data),
+  delete: (id: string) => api.delete(`/api/keywords/${id}`),
+  toggle: (id: string) => api.post(`/api/keywords/${id}/toggle`),
+  syncGSC: (projectId: string) => api.post('/api/keywords/sync-gsc', { projectId }),
+};
+
+// Keyword Groups API
+export const keywordGroupsApi = {
+  getByProject: (projectId: string) => api.get(`/api/keyword-groups/project/${projectId}`),
+  create: (data: {
+    projectId: string;
+    name: string;
+    color?: string;
+    description?: string;
+  }) => api.post('/api/keyword-groups', data),
+  update: (id: string, data: {
+    name?: string;
+    color?: string;
+    description?: string;
+  }) => api.patch(`/api/keyword-groups/${id}`, data),
+  delete: (id: string) => api.delete(`/api/keyword-groups/${id}`),
+};
+
+// Google Search Console API
+export const gscApi = {
+  getStatus: () => api.get('/api/gsc/status'),
+  getAuthUrl: () => api.get('/api/gsc/auth-url'),
+  getSites: () => api.get('/api/gsc/sites'),
+  getTopKeywords: (siteUrl: string, limit?: number) => 
+    api.get('/api/gsc/top-keywords', { params: { siteUrl, limit } }),
+  disconnect: () => api.post('/api/gsc/disconnect'),
+};
+
