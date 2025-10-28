@@ -10,9 +10,12 @@ import { Plus, LogOut, Settings, BarChart3, Clock, CheckCircle2, AlertCircle, Tr
 import TrendChart from '@/components/TrendChart'
 import ThemeToggle from '@/components/ThemeToggle'
 import BulkUploadModal from '@/components/BulkUploadModal'
+import { useBranding } from '@/components/BrandingProvider'
+import Image from 'next/image'
 
 export default function DashboardPage() {
   const router = useRouter()
+  const branding = useBranding()
   const [showNewAuditModal, setShowNewAuditModal] = useState(false)
   const [showBulkUploadModal, setShowBulkUploadModal] = useState(false)
   const [showNewProjectModal, setShowNewProjectModal] = useState(false)
@@ -170,7 +173,19 @@ export default function DashboardPage() {
       {/* Sidebar */}
       <aside className="fixed left-0 top-0 h-full w-64 bg-background-card border-r border-border">
         <div className="p-6">
-          <h1 className="text-xl font-bold mb-8 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">FixFirst SEO</h1>
+          {branding?.logoUrl ? (
+            <div className="mb-8 flex items-center justify-center">
+              <img 
+                src={branding.logoUrl} 
+                alt={branding.appName || 'FixFirst SEO'} 
+                className="max-h-12 w-auto object-contain"
+              />
+            </div>
+          ) : (
+            <h1 className="text-xl font-bold mb-8 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              {branding?.appName || 'FixFirst SEO'}
+            </h1>
+          )}
           
           <nav className="space-y-2">
             <NavItem icon={<BarChart3 />} label="Dashboard" active />

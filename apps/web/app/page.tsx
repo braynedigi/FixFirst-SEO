@@ -6,11 +6,13 @@ import { auditsApi } from '@/lib/api'
 import toast from 'react-hot-toast'
 import { Search, Zap, LineChart, Shield, CheckCircle } from 'lucide-react'
 import ThemeToggle from '@/components/ThemeToggle'
+import { useBranding } from '@/components/BrandingProvider'
 
 export default function HomePage() {
   const [url, setUrl] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const branding = useBranding()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -43,10 +45,22 @@ export default function HomePage() {
       <header className="border-b border-border">
         <nav className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-primary via-accent to-success rounded-lg flex items-center justify-center shadow-lg shadow-primary/50">
-              <Search className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">FixFirst SEO</span>
+            {branding?.logoUrl ? (
+              <img 
+                src={branding.logoUrl} 
+                alt={branding.appName || 'FixFirst SEO'} 
+                className="h-10 w-auto object-contain"
+              />
+            ) : (
+              <>
+                <div className="w-8 h-8 bg-gradient-to-br from-primary via-accent to-success rounded-lg flex items-center justify-center shadow-lg shadow-primary/50">
+                  <Search className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                  {branding?.appName || 'FixFirst SEO'}
+                </span>
+              </>
+            )}
           </div>
           <div className="flex items-center gap-3">
             <ThemeToggle />

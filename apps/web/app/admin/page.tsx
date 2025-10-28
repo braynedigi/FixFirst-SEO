@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import { Users, Shield, BarChart3, Settings as SettingsIcon, LogOut, Home, ArrowLeft, Mail, Send, Palette, FileText, Edit2, Save, X, RotateCcw, Eye } from 'lucide-react'
+import { useBranding } from '@/components/BrandingProvider'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 
@@ -13,6 +14,7 @@ type TabType = 'rules' | 'users' | 'stats' | 'email' | 'branding' | 'settings' |
 
 export default function AdminPage() {
   const router = useRouter()
+  const branding = useBranding()
   const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState<TabType>('stats')
   const [user, setUser] = useState<any>(null)
@@ -59,9 +61,19 @@ export default function AdminPage() {
       {/* Sidebar */}
       <aside className="fixed left-0 top-0 h-full w-64 bg-background-card border-r border-border">
         <div className="p-6">
-          <h1 className="text-xl font-bold mb-8 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            FixFirst SEO
-          </h1>
+          {branding?.logoUrl ? (
+            <div className="mb-8 flex items-center justify-center">
+              <img 
+                src={branding.logoUrl} 
+                alt={branding.appName || 'FixFirst SEO'} 
+                className="max-h-12 w-auto object-contain"
+              />
+            </div>
+          ) : (
+            <h1 className="text-xl font-bold mb-8 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              {branding?.appName || 'FixFirst SEO'}
+            </h1>
+          )}
           
           <div className="mb-4 pb-4 border-b border-border">
             <p className="text-xs text-text-secondary mb-1">Signed in as</p>

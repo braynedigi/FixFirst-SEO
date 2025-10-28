@@ -6,9 +6,11 @@ import { useQuery, useMutation } from '@tanstack/react-query'
 import { authApi, userApi } from '@/lib/api'
 import { User, Shield, CreditCard, Bell, Key, LogOut, Copy, Eye, EyeOff, AlertTriangle, Send, ExternalLink } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { useBranding } from '@/components/BrandingProvider'
 
 export default function SettingsPage() {
   const router = useRouter()
+  const branding = useBranding()
   const [activeTab, setActiveTab] = useState<'profile' | 'plan' | 'notifications' | 'security'>('profile')
 
   useEffect(() => {
@@ -48,9 +50,19 @@ export default function SettingsPage() {
       {/* Sidebar */}
       <aside className="fixed left-0 top-0 h-full w-64 bg-background-card border-r border-border">
         <div className="p-6">
-          <h1 className="text-xl font-bold mb-8 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            FixFirst SEO
-          </h1>
+          {branding?.logoUrl ? (
+            <div className="mb-8 flex items-center justify-center">
+              <img 
+                src={branding.logoUrl} 
+                alt={branding.appName || 'FixFirst SEO'} 
+                className="max-h-12 w-auto object-contain"
+              />
+            </div>
+          ) : (
+            <h1 className="text-xl font-bold mb-8 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              {branding?.appName || 'FixFirst SEO'}
+            </h1>
+          )}
 
           <nav className="space-y-2">
             <NavItem
