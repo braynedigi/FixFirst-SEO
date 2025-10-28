@@ -155,7 +155,7 @@ export default function NotificationBell() {
 
       {/* Notification Panel */}
       {showPanel && (
-        <div className="absolute right-0 top-full mt-2 w-96 max-h-[600px] bg-background-card border border-border rounded-lg shadow-2xl z-50 flex flex-col">
+        <div className="fixed right-4 top-16 w-96 max-w-[calc(100vw-2rem)] max-h-[600px] bg-background-card border border-border rounded-lg shadow-2xl z-[9999] flex flex-col">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-border">
             <div className="flex items-center gap-2">
