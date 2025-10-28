@@ -6,6 +6,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { projectsApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { Save, Trash2, AlertTriangle } from 'lucide-react';
+import ProjectTags from './ProjectTags';
 
 interface ProjectSettingsProps {
   project: any;
@@ -108,6 +109,19 @@ export default function ProjectSettings({ project, isOwner }: ProjectSettingsPro
             </button>
           )}
         </div>
+      </div>
+
+      {/* Project Tags */}
+      <div className="bg-background-card border border-border rounded-lg p-6 mb-6">
+        <h3 className="text-lg font-semibold text-text-primary mb-4">Project Tags</h3>
+        <p className="text-sm text-text-secondary mb-4">
+          Organize your projects with color-coded tags for easy identification and filtering.
+        </p>
+        <ProjectTags 
+          projectId={project.id} 
+          tags={project.tags || []} 
+          editable={isOwner}
+        />
       </div>
 
       {/* Project Information */}

@@ -35,11 +35,12 @@ export const projectsApi = {
   getOne: (id: string) => api.get(`/api/projects/${id}`),
   create: (data: { name: string; domain: string }) =>
     api.post('/api/projects', data),
-  update: (id: string, data: { name: string; domain: string }) =>
+  update: (id: string, data: { name?: string; domain?: string; tags?: any[] }) =>
     api.put(`/api/projects/${id}`, data),
   delete: (id: string) => api.delete(`/api/projects/${id}`),
   toggleFavorite: (id: string) => api.patch(`/api/projects/${id}/favorite`),
   updateLastViewed: (id: string) => api.patch(`/api/projects/${id}/view`),
+  updateTags: (id: string, tags: any[]) => api.patch(`/api/projects/${id}/tags`, { tags }),
 };
 
 // Audits API

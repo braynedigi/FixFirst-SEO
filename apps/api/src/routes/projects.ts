@@ -129,7 +129,7 @@ router.get('/:id', authenticate, async (req: AuthRequest, res, next) => {
 // Update project
 router.put('/:id', authenticate, async (req: AuthRequest, res, next) => {
   try {
-    const { name, domain } = req.body;
+    const { name, domain, tags } = req.body;
     
     const project = await prisma.project.findFirst({
       where: {
@@ -142,12 +142,49 @@ router.put('/:id', authenticate, async (req: AuthRequest, res, next) => {
       return res.status(404).json({ error: 'Project not found or you do not have permission to update it' });
     }
 
+    const updateData: any = {};
+    if (name) updateData.name = name;
+    if (domain) updateData.domain = extractDomain(domain);
+    if (tags !== undefined) updateData.tags = tags;
+
     const updatedProject = await prisma.project.update({
       where: { id: req.params.id },
-      data: {
-        name: name || project.name,
-        domain: domain ? extractDomain(domain) : project.domain,
+      data: updateData,
+    });
+
+    res.json(updatedProject);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Update project tags specifically
+router.patch('/:id/tags', authenticate, async (req: AuthRequest, res, next) => {
+  try {
+    const { tags } = req.body;
+    
+    if (!Array.isArray(tags)) {
+      return res.status(400).json({ error: 'Tags must be an array' });
+    }
+
+    const project = await prisma.project.findFirst({
+      where: {
+        id: req.params.id,
+        OR: [
+          { userId: req.userId },
+          { members: { some: { userId: req.userId, role: { in: ['OWNER', 'ADMIN'] } } } },
+        ],
       },
+    });
+
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found or insufficient permissions' });
+    }
+
+    const updatedProject = await prisma.project.update({
+      where: { id: req.params.id },
+      data: { tags },
+      select: { id: true, tags: true },
     });
 
     res.json(updatedProject);

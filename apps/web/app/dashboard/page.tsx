@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { auditsApi, projectsApi, teamsApi, comparisonApi } from '@/lib/api'
 import toast from 'react-hot-toast'
 import { formatDateTime, getScoreColor, getScoreGrade } from '@/lib/utils'
-import { Plus, LogOut, Settings, BarChart3, Clock, CheckCircle2, AlertCircle, Trash2, RotateCcw, Shield, Calendar, Upload, FolderOpen, ExternalLink, Mail, Star, Filter, Copy, Check, Search, X } from 'lucide-react'
+import { Plus, LogOut, Settings, BarChart3, Clock, CheckCircle2, AlertCircle, Trash2, RotateCcw, Shield, Calendar, Upload, FolderOpen, ExternalLink, Mail, Star, Filter, Copy, Check, Search, X, Tag as TagIcon } from 'lucide-react'
 import TrendChart from '@/components/TrendChart'
 import ThemeToggle from '@/components/ThemeToggle'
 import BulkUploadModal from '@/components/BulkUploadModal'
@@ -532,6 +532,28 @@ export default function DashboardPage() {
                             )}
                           </button>
                         </p>
+                        
+                        {/* Tags */}
+                        {project.tags && project.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mb-2">
+                            {project.tags.slice(0, 3).map((tag: any, idx: number) => (
+                              <span
+                                key={idx}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium text-white"
+                                style={{ backgroundColor: tag.color }}
+                              >
+                                <TagIcon className="w-2.5 h-2.5" />
+                                {tag.name}
+                              </span>
+                            ))}
+                            {project.tags.length > 3 && (
+                              <span className="text-xs text-text-secondary px-2 py-0.5">
+                                +{project.tags.length - 3} more
+                              </span>
+                            )}
+                          </div>
+                        )}
+
                         <div className="flex items-center justify-between text-xs text-text-secondary">
                           <span>{project._count?.audits || 0} audits</span>
                           <span>{project._count?.members || 1} members</span>
