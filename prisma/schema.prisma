@@ -66,6 +66,8 @@ model Project {
   goals        Goal[]
   keywordGroups KeywordGroup[]
   keywords     Keyword[]
+  backlinks    Backlink[]
+  backlinkMonitors BacklinkMonitor[]
   
   @@unique([userId, domain], name: "userId_domain")
   @@index([userId])
@@ -733,5 +735,69 @@ enum InvoiceStatus {
   PAID
   FAILED
   CANCELLED
+}
+
+model Backlink {
+  id              String         @id @default(cuid())
+  projectId       String         @map("project_id")
+  sourceUrl       String         @map("source_url") // URL of the page linking to you
+  sourceDomain    String         @map("source_domain") // Domain of the linking site
+  targetUrl       String         @map("target_url") // Your page being linked to
+  anchorText      String?        @map("anchor_text") // Link anchor text
+  rel             String?        // nofollow, dofollow, ugc, sponsored
+  type            BacklinkType   @default(EXTERNAL)
+  status          BacklinkStatus @default(ACTIVE)
+  domainAuthority Int?           @map("domain_authority") // 0-100
+  pageAuthority   Int?           @map("page_authority") // 0-100
+  spamScore       Int?           @map("spam_score") // 0-100
+  firstSeen       DateTime       @default(now()) @map("first_seen")
+  lastSeen        DateTime       @default(now()) @map("last_seen")
+  lastChecked     DateTime       @default(now()) @map("last_checked")
+  metadata        Json           @default("{}")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+  
+  project         Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  @@index([projectId])
+  @@index([sourceDomain])
+  @@index([status])
+  @@index([lastChecked])
+  @@map("backlinks")
+}
+
+model BacklinkMonitor {
+  id              String    @id @default(cuid())
+  projectId       String    @map("project_id")
+  name            String
+  targetUrl       String    @map("target_url") // URL to monitor backlinks for
+  enabled         Boolean   @default(true)
+  checkFrequency  String    @default("daily") @map("check_frequency") // daily, weekly, monthly
+  lastChecked     DateTime? @map("last_checked")
+  totalBacklinks  Int       @default(0) @map("total_backlinks")
+  newBacklinks    Int       @default(0) @map("new_backlinks") // Since last check
+  lostBacklinks   Int       @default(0) @map("lost_backlinks") // Since last check
+  metadata        Json      @default("{}")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  
+  project         Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  @@index([projectId])
+  @@index([enabled])
+  @@map("backlink_monitors")
+}
+
+enum BacklinkType {
+  EXTERNAL    // From external domain
+  INTERNAL    // From same domain
+  REDIRECT    // Via redirect
+}
+
+enum BacklinkStatus {
+  ACTIVE      // Link is currently live
+  LOST        // Link was removed
+  BROKEN      // Link leads to 404/error
+  NOFOLLOW    // Changed to nofollow
 }
 
