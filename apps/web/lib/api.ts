@@ -476,3 +476,18 @@ export const backlinksApi = {
     api.post(`/api/backlinks/monitors/${id}/check`),
 };
 
+// Chat API
+export const chatApi = {
+  getConversations: () => api.get('/api/chat/conversations'),
+  createConversation: (data?: { projectId?: string; title?: string }) => 
+    api.post('/api/chat/conversations', data),
+  getConversation: (id: string) => api.get(`/api/chat/conversations/${id}`),
+  updateConversation: (id: string, data: { title: string }) => 
+    api.patch(`/api/chat/conversations/${id}`, data),
+  deleteConversation: (id: string) => 
+    api.delete(`/api/chat/conversations/${id}`),
+  sendMessage: (conversationId: string, content: string) => 
+    api.post(`/api/chat/conversations/${conversationId}/messages`, { content }),
+  getStats: () => api.get('/api/chat/stats'),
+};
+

@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { auditsApi, projectsApi, teamsApi, comparisonApi } from '@/lib/api'
 import toast from 'react-hot-toast'
 import { formatDateTime, getScoreColor, getScoreGrade } from '@/lib/utils'
-import { Plus, LogOut, Settings, BarChart3, Clock, CheckCircle2, AlertCircle, Trash2, RotateCcw, Shield, Calendar, Upload, FolderOpen, ExternalLink, Mail, Star, Filter, Copy, Check, Search, X, Tag as TagIcon, CreditCard, DollarSign } from 'lucide-react'
+import { Plus, LogOut, Settings, BarChart3, Clock, CheckCircle2, AlertCircle, Trash2, RotateCcw, Shield, Calendar, Upload, FolderOpen, ExternalLink, Mail, Star, Filter, Copy, Check, Search, X, Tag as TagIcon, CreditCard, DollarSign, MessageSquare } from 'lucide-react'
 import TrendChart from '@/components/TrendChart'
 import ThemeToggle from '@/components/ThemeToggle'
 import BulkUploadModal from '@/components/BulkUploadModal'
@@ -243,6 +243,7 @@ export default function DashboardPage() {
           <nav className="space-y-2">
             <NavItem icon={<BarChart3 />} label="Dashboard" active />
             <NavItem icon={<BarChart3 />} label="Analytics" onClick={() => router.push('/analytics')} />
+            <NavItem icon={<MessageSquare />} label="AI Assistant" onClick={() => router.push('/chat')} />
             <NavItem icon={<Calendar />} label="Scheduled Audits" onClick={() => router.push('/schedules')} />
             <NavItem icon={<Upload />} label="Bulk Upload" onClick={() => setShowBulkUploadModal(true)} />
             <NavItem icon={<CreditCard />} label="Billing" onClick={() => router.push('/billing')} />
