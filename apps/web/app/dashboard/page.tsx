@@ -249,7 +249,10 @@ export default function DashboardPage() {
             <NavItem icon={<CreditCard />} label="Billing" onClick={() => router.push('/billing')} />
             <NavItem icon={<Settings />} label="Settings" onClick={() => router.push('/settings')} />
             {userRole === 'ADMIN' && (
-              <NavItem icon={<Shield />} label="Admin Panel" onClick={() => router.push('/admin')} />
+              <>
+                <NavItem icon={<Shield />} label="Admin Panel" onClick={() => router.push('/admin')} />
+                <NavItem icon={<Shield />} label="Custom Rules" onClick={() => router.push('/custom-rules')} />
+              </>
             )}
           </nav>
 

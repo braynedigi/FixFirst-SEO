@@ -34,6 +34,7 @@ import { dashboardAnalyticsRoutes } from './routes/dashboard-analytics';
 import { billingRoutes } from './routes/billing';
 import { backlinksRoutes } from './routes/backlinks';
 import { chatRoutes } from './routes/chat';
+import { customRulesRoutes } from './routes/customRules';
 import { errorHandler } from './middleware/error-handler';
 import { rateLimiter } from './middleware/rate-limiter';
 import { websocketService } from './services/websocket-service';
@@ -128,6 +129,7 @@ app.use('/api/dashboard-analytics', dashboardAnalyticsRoutes);
 app.use('/api/billing', billingRoutes);
 app.use('/api/backlinks', backlinksRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/custom-rules', customRulesRoutes);
 
 // Error handling
 app.use(errorHandler);

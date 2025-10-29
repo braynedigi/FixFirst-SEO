@@ -491,3 +491,23 @@ export const chatApi = {
   getStats: () => api.get('/api/chat/stats'),
 };
 
+// Custom Rules API
+export const customRulesApi = {
+  getAll: () => api.get('/api/custom-rules'),
+  get: (id: string) => api.get(`/api/custom-rules/${id}`),
+  create: (data: any) => api.post('/api/custom-rules', data),
+  update: (id: string, data: any) => api.patch(`/api/custom-rules/${id}`, data),
+  delete: (id: string) => api.delete(`/api/custom-rules/${id}`),
+  test: (condition: any, sampleData: any) => 
+    api.post('/api/custom-rules/test', { condition, sampleData }),
+  getAvailableFields: () => api.get('/api/custom-rules/meta/available-fields'),
+  getProjectRules: (projectId: string) => 
+    api.get(`/api/custom-rules/project/${projectId}`),
+  assignToProject: (projectId: string, ruleId: string, enabled?: boolean) => 
+    api.post(`/api/custom-rules/project/${projectId}/assign`, { ruleId, enabled }),
+  unassignFromProject: (projectId: string, ruleId: string) => 
+    api.delete(`/api/custom-rules/project/${projectId}/unassign/${ruleId}`),
+  getViolations: (auditId: string) => 
+    api.get(`/api/custom-rules/violations/audit/${auditId}`),
+};
+

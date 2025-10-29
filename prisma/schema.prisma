@@ -40,6 +40,7 @@ model User {
   subscriptions           Subscription[]
   invoices                Invoice[]
   chatConversations       ChatConversation[]
+  customRules             CustomRule[]
   
   @@map("users")
 }
@@ -70,6 +71,7 @@ model Project {
   backlinks    Backlink[]
   backlinkMonitors BacklinkMonitor[]
   chatConversations ChatConversation[]
+  projectRules ProjectRule[]
   
   @@unique([userId, domain], name: "userId_domain")
   @@index([userId])
@@ -98,6 +100,7 @@ model Audit {
   project              Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
   pages                Page[]
   issues               Issue[]
+  ruleViolations       RuleViolation[]
   
   @@index([projectId])
   @@index([status])
@@ -839,5 +842,69 @@ enum ChatRole {
   USER
   ASSISTANT
   SYSTEM
+}
+
+model CustomRule {
+  id            String          @id @default(cuid())
+  name          String
+  description   String?         @db.Text
+  category      RuleCategory
+  severity      RuleSeverity
+  condition     Json            // Rule condition logic (what to check)
+  message       String          @db.Text // Message to show when rule fails
+  enabled       Boolean         @default(true)
+  global        Boolean         @default(false) // If true, applies to all projects
+  createdById   String          @map("created_by_id")
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+  
+  createdBy     User            @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  violations    RuleViolation[]
+  projectRules  ProjectRule[]
+  
+  @@index([category])
+  @@index([enabled])
+  @@index([global])
+  @@map("custom_rules")
+}
+
+model ProjectRule {
+  id          String   @id @default(cuid())
+  projectId   String   @map("project_id")
+  ruleId      String   @map("rule_id")
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at")
+  
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  rule        CustomRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  
+  @@unique([projectId, ruleId])
+  @@index([projectId])
+  @@index([ruleId])
+  @@map("project_rules")
+}
+
+model RuleViolation {
+  id          String     @id @default(cuid())
+  auditId     String     @map("audit_id")
+  ruleId      String     @map("rule_id")
+  message     String     @db.Text
+  details     Json?      // Additional details about the violation
+  severity    RuleSeverity
+  createdAt   DateTime   @default(now()) @map("created_at")
+  
+  audit       Audit      @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  rule        CustomRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  
+  @@index([auditId])
+  @@index([ruleId])
+  @@map("rule_violations")
+}
+
+enum RuleSeverity {
+  INFO
+  WARNING
+  ERROR
+  CRITICAL
 }
 
