@@ -22,6 +22,10 @@ model User {
   twoFactorEnabled        Boolean   @default(false) @map("two_factor_enabled")
   twoFactorSecret         String?   @map("two_factor_secret")
   twoFactorBackupCodes    String?   @map("two_factor_backup_codes") // JSON array of hashed codes
+  paypalSubscriptionId    String?   @map("paypal_subscription_id")
+  subscriptionStatus      SubscriptionStatus @default(INACTIVE) @map("subscription_status")
+  subscriptionEndsAt      DateTime? @map("subscription_ends_at")
+  trialEndsAt             DateTime? @map("trial_ends_at")
   createdAt               DateTime  @default(now()) @map("created_at")
   updatedAt               DateTime  @updatedAt @map("updated_at")
   
@@ -33,6 +37,8 @@ model User {
   invitationsSent         Invitation[] @relation("InvitedBy")
   notifications           Notification[]
   notificationRules       NotificationRule[]
+  subscriptions           Subscription[]
+  invoices                Invoice[]
   
   @@map("users")
 }
@@ -664,5 +670,68 @@ enum NotificationChannel {
   EMAIL
   SLACK
   WEBHOOK
+}
+
+model Subscription {
+  id                String             @id @default(cuid())
+  userId            String             @map("user_id")
+  planTier          PlanTier           @map("plan_tier")
+  status            SubscriptionStatus
+  paypalSubscriptionId String?         @map("paypal_subscription_id")
+  paypalPlanId      String?            @map("paypal_plan_id")
+  amount            Float              // Monthly amount in USD
+  currency          String             @default("USD")
+  billingCycle      String             @default("MONTHLY") // MONTHLY, YEARLY
+  startDate         DateTime           @map("start_date")
+  endDate           DateTime?          @map("end_date")
+  canceledAt        DateTime?          @map("canceled_at")
+  metadata          Json               @default("{}")
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
+  
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([status])
+  @@map("subscriptions")
+}
+
+model Invoice {
+  id                String        @id @default(cuid())
+  userId            String        @map("user_id")
+  subscriptionId    String?       @map("subscription_id")
+  paypalInvoiceId   String?       @map("paypal_invoice_id")
+  amount            Float
+  currency          String        @default("USD")
+  status            InvoiceStatus
+  description       String?       @db.Text
+  invoiceUrl        String?       @map("invoice_url")
+  paidAt            DateTime?     @map("paid_at")
+  dueDate           DateTime?     @map("due_date")
+  metadata          Json          @default("{}")
+  createdAt         DateTime      @default(now()) @map("created_at")
+  
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([status])
+  @@map("invoices")
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  INACTIVE
+  CANCELLED
+  PAST_DUE
+  TRIAL
+  SUSPENDED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  PENDING
+  PAID
+  FAILED
+  CANCELLED
 }
 

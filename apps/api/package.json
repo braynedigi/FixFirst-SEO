@@ -13,6 +13,8 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@paypal/checkout-server-sdk": "^1.0.3",
+    "@paypal/paypal-server-sdk": "^1.1.0",
     "@prisma/client": "^5.8.1",
     "@seo-audit/audit-engine": "*",
     "@seo-audit/shared": "*",
@@ -20,6 +22,7 @@
     "@types/node-cron": "^3.0.11",
     "@types/nodemailer": "^7.0.3",
     "@types/papaparse": "^5.3.16",
+    "axios": "^1.13.1",
     "bcryptjs": "^2.4.3",
     "bullmq": "^5.1.5",
     "cors": "^2.8.5",
