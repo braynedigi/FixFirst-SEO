@@ -452,3 +452,27 @@ export const billingApi = {
   getInvoices: () => api.get('/api/billing/invoices'),
 };
 
+// Backlinks API
+export const backlinksApi = {
+  getByProject: (projectId: string, filters?: any) => 
+    api.get(`/api/backlinks/project/${projectId}`, { params: filters }),
+  getStats: (projectId: string) => 
+    api.get(`/api/backlinks/project/${projectId}/stats`),
+  getTrends: (projectId: string, days?: number) => 
+    api.get(`/api/backlinks/project/${projectId}/trends`, { params: { days } }),
+  getQuality: (projectId: string) => 
+    api.get(`/api/backlinks/project/${projectId}/quality`),
+  checkBacklinks: (projectId: string, targetUrl: string) => 
+    api.post('/api/backlinks/check', { projectId, targetUrl }),
+  getMonitors: (projectId: string) => 
+    api.get(`/api/backlinks/monitors/project/${projectId}`),
+  createMonitor: (data: any) => 
+    api.post('/api/backlinks/monitors', data),
+  updateMonitor: (id: string, data: any) => 
+    api.patch(`/api/backlinks/monitors/${id}`, data),
+  deleteMonitor: (id: string) => 
+    api.delete(`/api/backlinks/monitors/${id}`),
+  runCheck: (id: string) => 
+    api.post(`/api/backlinks/monitors/${id}/check`),
+};
+
