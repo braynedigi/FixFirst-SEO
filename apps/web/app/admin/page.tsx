@@ -1797,7 +1797,17 @@ function CreateUserModal({ onClose, onUserCreated }: { onClose: () => void; onUs
 
 function APISettingsTab() {
   const [openAIKey, setOpenAIKey] = useState('')
-  const [isEditing, setIsEditing] = useState(false)
+  const [gscClientId, setGscClientId] = useState('')
+  const [gscClientSecret, setGscClientSecret] = useState('')
+  const [gscRedirectUri, setGscRedirectUri] = useState('http://localhost:3001/api/gsc/callback')
+  const [paypalMode, setPaypalMode] = useState('sandbox')
+  const [paypalClientId, setPaypalClientId] = useState('')
+  const [paypalClientSecret, setPaypalClientSecret] = useState('')
+  const [paypalProPlanId, setPaypalProPlanId] = useState('')
+  const [paypalEnterprisePlanId, setPaypalEnterprisePlanId] = useState('')
+  const [isEditingOpenAI, setIsEditingOpenAI] = useState(false)
+  const [isEditingGSC, setIsEditingGSC] = useState(false)
+  const [isEditingPayPal, setIsEditingPayPal] = useState(false)
   const [isTesting, setIsTesting] = useState(false)
   const queryClient = useQueryClient()
 
@@ -1874,6 +1884,86 @@ function APISettingsTab() {
     testOpenAIMutation.mutate(openAIKey)
   }
 
+  const handleSaveGSC = async () => {
+    if (!gscClientId.trim() || !gscClientSecret.trim()) {
+      toast.error('Please enter both Client ID and Client Secret')
+      return
+    }
+
+    try {
+      await Promise.all([
+        updateSettingMutation.mutateAsync({
+          key: 'GSC_CLIENT_ID',
+          value: gscClientId,
+          description: 'Google Search Console OAuth Client ID',
+          isSecret: false,
+        }),
+        updateSettingMutation.mutateAsync({
+          key: 'GSC_CLIENT_SECRET',
+          value: gscClientSecret,
+          description: 'Google Search Console OAuth Client Secret',
+          isSecret: true,
+        }),
+        updateSettingMutation.mutateAsync({
+          key: 'GSC_REDIRECT_URI',
+          value: gscRedirectUri,
+          description: 'Google Search Console OAuth Redirect URI',
+          isSecret: false,
+        }),
+      ])
+      toast.success('GSC settings saved! Restart API server to apply changes.')
+      setIsEditingGSC(false)
+    } catch (error) {
+      // Error already handled by mutation
+    }
+  }
+
+  const handleSavePayPal = async () => {
+    if (!paypalClientId.trim() || !paypalClientSecret.trim()) {
+      toast.error('Please enter both PayPal Client ID and Client Secret')
+      return
+    }
+
+    try {
+      await Promise.all([
+        updateSettingMutation.mutateAsync({
+          key: 'PAYPAL_MODE',
+          value: paypalMode,
+          description: 'PayPal mode (sandbox or live)',
+          isSecret: false,
+        }),
+        updateSettingMutation.mutateAsync({
+          key: 'PAYPAL_CLIENT_ID',
+          value: paypalClientId,
+          description: 'PayPal API Client ID',
+          isSecret: false,
+        }),
+        updateSettingMutation.mutateAsync({
+          key: 'PAYPAL_CLIENT_SECRET',
+          value: paypalClientSecret,
+          description: 'PayPal API Client Secret',
+          isSecret: true,
+        }),
+        ...(paypalProPlanId ? [updateSettingMutation.mutateAsync({
+          key: 'PAYPAL_PRO_PLAN_ID',
+          value: paypalProPlanId,
+          description: 'PayPal PRO subscription plan ID',
+          isSecret: false,
+        })] : []),
+        ...(paypalEnterprisePlanId ? [updateSettingMutation.mutateAsync({
+          key: 'PAYPAL_ENTERPRISE_PLAN_ID',
+          value: paypalEnterprisePlanId,
+          description: 'PayPal ENTERPRISE subscription plan ID',
+          isSecret: false,
+        })] : []),
+      ])
+      toast.success('PayPal settings saved! Restart API server to apply changes.')
+      setIsEditingPayPal(false)
+    } catch (error) {
+      // Error already handled by mutation
+    }
+  }
+
   if (isLoading) return <LoadingState />
 
   const existingOpenAIKey = settingsData?.find((s: any) => s.key === 'OPENAI_API_KEY')
@@ -1903,7 +1993,7 @@ function APISettingsTab() {
           </div>
         </div>
 
-        {!isEditing && existingOpenAIKey ? (
+        {!isEditingOpenAI && existingOpenAIKey ? (
           <div className="space-y-3">
             <div className="flex items-center justify-between p-3 bg-background-secondary rounded-lg">
               <div className="flex items-center gap-3">
@@ -1916,7 +2006,7 @@ function APISettingsTab() {
                 </div>
               </div>
               <button
-                onClick={() => setIsEditing(true)}
+                onClick={() => setIsEditingOpenAI(true)}
                 className="btn-secondary btn-sm"
               >
                 Update Key
@@ -1951,10 +2041,10 @@ function APISettingsTab() {
             </div>
 
             <div className="flex gap-3">
-              {isEditing && (
+              {isEditingOpenAI && (
                 <button
                   onClick={() => {
-                    setIsEditing(false)
+                    setIsEditingOpenAI(false)
                     setOpenAIKey('')
                   }}
                   className="btn-secondary"
@@ -2020,12 +2110,260 @@ function APISettingsTab() {
         </div>
       </div>
 
-      {/* Future API Integrations */}
-      <div className="card opacity-50">
-        <h3 className="text-lg font-semibold mb-2">🔮 Coming Soon</h3>
-        <p className="text-sm text-text-secondary">
-          More API integrations will be available here in future updates
-        </p>
+      {/* GSC Settings Card */}
+      <div className="card">
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-semibold mb-1">🔍 Google Search Console</h3>
+            <p className="text-sm text-text-secondary">
+              OAuth credentials for keyword tracking integration
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {settingsData?.find((s: any) => s.key === 'GSC_CLIENT_ID') && (
+              <span className="px-3 py-1 bg-success/20 text-success text-xs font-medium rounded-full border border-success/30">
+                ✓ Configured
+              </span>
+            )}
+          </div>
+        </div>
+
+        {!isEditingGSC && settingsData?.find((s: any) => s.key === 'GSC_CLIENT_ID') ? (
+          <div className="space-y-3">
+            <div className="p-3 bg-background-secondary rounded-lg space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Client ID</span>
+                <span className="text-xs text-text-secondary">Configured</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Client Secret</span>
+                <span className="text-xs text-text-secondary font-mono">••••••••</span>
+              </div>
+            </div>
+            <button
+              onClick={() => setIsEditingGSC(true)}
+              className="btn-secondary btn-sm"
+            >
+              Update Credentials
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Client ID</label>
+              <input
+                type="text"
+                value={gscClientId}
+                onChange={(e) => setGscClientId(e.target.value)}
+                placeholder="123456789-xxx.apps.googleusercontent.com"
+                className="input w-full font-mono text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Client Secret</label>
+              <input
+                type="text"
+                value={gscClientSecret}
+                onChange={(e) => setGscClientSecret(e.target.value)}
+                placeholder="GOCSPX-..."
+                className="input w-full font-mono text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Redirect URI</label>
+              <input
+                type="text"
+                value={gscRedirectUri}
+                onChange={(e) => setGscRedirectUri(e.target.value)}
+                className="input w-full font-mono text-sm"
+              />
+              <p className="text-xs text-text-secondary mt-1">
+                Must match the redirect URI in your Google Cloud Console
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              {isEditingGSC && (
+                <button
+                  onClick={() => {
+                    setIsEditingGSC(false)
+                    setGscClientId('')
+                    setGscClientSecret('')
+                  }}
+                  className="btn-secondary"
+                >
+                  Cancel
+                </button>
+              )}
+              <button
+                onClick={handleSaveGSC}
+                disabled={updateSettingMutation.isPending}
+                className="btn-primary"
+              >
+                {updateSettingMutation.isPending ? 'Saving...' : 'Save Credentials'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+          <div className="text-sm text-text-secondary space-y-1">
+            <p><strong>Setup Guide:</strong></p>
+            <ol className="list-decimal list-inside space-y-1 ml-2 text-xs">
+              <li>Go to Google Cloud Console → APIs & Services → Credentials</li>
+              <li>Create OAuth 2.0 Client ID (Web application)</li>
+              <li>Add authorized redirect URI</li>
+              <li>Copy Client ID and Client Secret here</li>
+            </ol>
+            <p className="pt-2 text-xs">
+              See <code className="px-1 py-0.5 bg-background-card rounded">docs/GSC_SETUP_GUIDE.md</code> for detailed instructions
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* PayPal Settings Card */}
+      <div className="card">
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-semibold mb-1">💳 PayPal Integration</h3>
+            <p className="text-sm text-text-secondary">
+              API credentials for subscription billing
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {settingsData?.find((s: any) => s.key === 'PAYPAL_CLIENT_ID') && (
+              <span className="px-3 py-1 bg-success/20 text-success text-xs font-medium rounded-full border border-success/30">
+                ✓ Configured
+              </span>
+            )}
+          </div>
+        </div>
+
+        {!isEditingPayPal && settingsData?.find((s: any) => s.key === 'PAYPAL_CLIENT_ID') ? (
+          <div className="space-y-3">
+            <div className="p-3 bg-background-secondary rounded-lg space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Mode</span>
+                <span className="text-xs font-mono">{settingsData?.find((s: any) => s.key === 'PAYPAL_MODE')?.value || 'sandbox'}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Client ID</span>
+                <span className="text-xs text-text-secondary">Configured</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Client Secret</span>
+                <span className="text-xs text-text-secondary font-mono">••••••••</span>
+              </div>
+            </div>
+            <button
+              onClick={() => setIsEditingPayPal(true)}
+              className="btn-secondary btn-sm"
+            >
+              Update Credentials
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Mode</label>
+              <select
+                value={paypalMode}
+                onChange={(e) => setPaypalMode(e.target.value)}
+                className="input w-full"
+              >
+                <option value="sandbox">Sandbox (Testing)</option>
+                <option value="live">Live (Production)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Client ID</label>
+              <input
+                type="text"
+                value={paypalClientId}
+                onChange={(e) => setPaypalClientId(e.target.value)}
+                placeholder="AYxxxxxxxxxxxxxx"
+                className="input w-full font-mono text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Client Secret</label>
+              <input
+                type="text"
+                value={paypalClientSecret}
+                onChange={(e) => setPaypalClientSecret(e.target.value)}
+                placeholder="EKxxxxxxxxxxxxxx"
+                className="input w-full font-mono text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">PRO Plan ID (Optional)</label>
+              <input
+                type="text"
+                value={paypalProPlanId}
+                onChange={(e) => setPaypalProPlanId(e.target.value)}
+                placeholder="P-XXXXXXXXXXXX"
+                className="input w-full font-mono text-sm"
+              />
+              <p className="text-xs text-text-secondary mt-1">
+                Leave empty if not using subscriptions yet
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">ENTERPRISE Plan ID (Optional)</label>
+              <input
+                type="text"
+                value={paypalEnterprisePlanId}
+                onChange={(e) => setPaypalEnterprisePlanId(e.target.value)}
+                placeholder="P-YYYYYYYYYYYY"
+                className="input w-full font-mono text-sm"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              {isEditingPayPal && (
+                <button
+                  onClick={() => {
+                    setIsEditingPayPal(false)
+                    setPaypalClientId('')
+                    setPaypalClientSecret('')
+                  }}
+                  className="btn-secondary"
+                >
+                  Cancel
+                </button>
+              )}
+              <button
+                onClick={handleSavePayPal}
+                disabled={updateSettingMutation.isPending}
+                className="btn-primary"
+              >
+                {updateSettingMutation.isPending ? 'Saving...' : 'Save Credentials'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="mt-4 p-4 bg-purple-500/10 border border-purple-500/30 rounded-lg">
+          <div className="text-sm text-text-secondary space-y-1">
+            <p><strong>Setup Guide:</strong></p>
+            <ol className="list-decimal list-inside space-y-1 ml-2 text-xs">
+              <li>Go to PayPal Developer Dashboard</li>
+              <li>Create a new app or use existing</li>
+              <li>Copy Client ID and Secret from app details</li>
+              <li>Create subscription plans and copy Plan IDs</li>
+            </ol>
+            <p className="pt-2 text-xs">
+              See <code className="px-1 py-0.5 bg-background-card rounded">docs/PAYPAL_BILLING_SETUP.md</code> for detailed instructions
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   )
