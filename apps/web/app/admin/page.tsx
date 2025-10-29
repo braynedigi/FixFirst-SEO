@@ -1805,9 +1805,11 @@ function APISettingsTab() {
   const [paypalClientSecret, setPaypalClientSecret] = useState('')
   const [paypalProPlanId, setPaypalProPlanId] = useState('')
   const [paypalEnterprisePlanId, setPaypalEnterprisePlanId] = useState('')
+  const [psiApiKey, setPsiApiKey] = useState('')
   const [isEditingOpenAI, setIsEditingOpenAI] = useState(false)
   const [isEditingGSC, setIsEditingGSC] = useState(false)
   const [isEditingPayPal, setIsEditingPayPal] = useState(false)
+  const [isEditingPSI, setIsEditingPSI] = useState(false)
   const [isTesting, setIsTesting] = useState(false)
   const queryClient = useQueryClient()
 
@@ -1962,6 +1964,21 @@ function APISettingsTab() {
     } catch (error) {
       // Error already handled by mutation
     }
+  }
+
+  const handleSavePSI = () => {
+    if (!psiApiKey.trim()) {
+      toast.error('Please enter PageSpeed Insights API key')
+      return
+    }
+
+    updateSettingMutation.mutate({
+      key: 'PSI_API_KEY',
+      value: psiApiKey,
+      description: 'Google PageSpeed Insights API Key',
+      isSecret: true,
+    })
+    setIsEditingPSI(false)
   }
 
   if (isLoading) return <LoadingState />
@@ -2362,6 +2379,124 @@ function APISettingsTab() {
             <p className="pt-2 text-xs">
               See <code className="px-1 py-0.5 bg-background-card rounded">docs/PAYPAL_BILLING_SETUP.md</code> for detailed instructions
             </p>
+          </div>
+        </div>
+      </div>
+
+      {/* PageSpeed Insights Settings Card */}
+      <div className="card">
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-semibold mb-1">⚡ Google PageSpeed Insights</h3>
+            <p className="text-sm text-text-secondary">
+              API key for SEO audit performance analysis
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {settingsData?.find((s: any) => s.key === 'PSI_API_KEY') && (
+              <span className="px-3 py-1 bg-success/20 text-success text-xs font-medium rounded-full border border-success/30">
+                ✓ Configured
+              </span>
+            )}
+          </div>
+        </div>
+
+        {!isEditingPSI && settingsData?.find((s: any) => s.key === 'PSI_API_KEY') ? (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-3 bg-background-secondary rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <SettingsIcon className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <div className="text-sm font-medium">PageSpeed Insights API Key</div>
+                  <div className="text-xs text-text-secondary font-mono">••••••••</div>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsEditingPSI(true)}
+                className="btn-secondary btn-sm"
+              >
+                Update Key
+              </button>
+            </div>
+            <div className="text-xs text-text-secondary">
+              Last updated: {new Date(settingsData.find((s: any) => s.key === 'PSI_API_KEY').updatedAt).toLocaleString()}
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">PageSpeed Insights API Key</label>
+              <input
+                type="text"
+                value={psiApiKey}
+                onChange={(e) => setPsiApiKey(e.target.value)}
+                placeholder="AIza..."
+                className="input w-full font-mono text-sm"
+              />
+              <p className="text-xs text-text-secondary mt-1">
+                Get your API key from{' '}
+                <a
+                  href="https://developers.google.com/speed/docs/insights/v5/get-started"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  Google Cloud Console
+                </a>
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              {isEditingPSI && (
+                <button
+                  onClick={() => {
+                    setIsEditingPSI(false)
+                    setPsiApiKey('')
+                  }}
+                  className="btn-secondary"
+                >
+                  Cancel
+                </button>
+              )}
+              <button
+                onClick={handleSavePSI}
+                disabled={updateSettingMutation.isPending || !psiApiKey.trim()}
+                className="btn-primary"
+              >
+                {updateSettingMutation.isPending ? (
+                  <span className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Saving...
+                  </span>
+                ) : (
+                  'Save API Key'
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="mt-4 p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
+          <div className="flex gap-3">
+            <div className="flex-shrink-0">
+              <div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center">
+                <span className="text-green-400 text-xs font-bold">ℹ</span>
+              </div>
+            </div>
+            <div className="text-sm text-text-secondary space-y-1">
+              <p><strong>Why configure PageSpeed Insights?</strong></p>
+              <ul className="list-disc list-inside space-y-1 ml-2 text-xs">
+                <li>Required for running SEO audits</li>
+                <li>Analyzes page performance, accessibility, SEO, and best practices</li>
+                <li>Provides Core Web Vitals metrics</li>
+                <li>Free to use with generous quota (25,000 requests/day)</li>
+              </ul>
+              <p className="pt-2">
+                <strong>Setup:</strong> Go to Google Cloud Console → APIs & Services → Credentials → Create API Key
+              </p>
+            </div>
           </div>
         </div>
       </div>
