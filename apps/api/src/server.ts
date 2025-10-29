@@ -31,6 +31,7 @@ import { keywordGroupsRoutes } from './routes/keywordGroups';
 import { gscRoutes } from './routes/gsc';
 import { twoFactorRoutes } from './routes/twoFactor';
 import { dashboardAnalyticsRoutes } from './routes/dashboard-analytics';
+import { billingRoutes } from './routes/billing';
 import { errorHandler } from './middleware/error-handler';
 import { rateLimiter } from './middleware/rate-limiter';
 import { websocketService } from './services/websocket-service';
@@ -122,6 +123,7 @@ app.use('/api/keyword-groups', keywordGroupsRoutes);
 app.use('/api/gsc', gscRoutes);
 app.use('/api/2fa', twoFactorRoutes);
 app.use('/api/dashboard-analytics', dashboardAnalyticsRoutes);
+app.use('/api/billing', billingRoutes);
 
 // Error handling
 app.use(errorHandler);

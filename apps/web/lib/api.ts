@@ -440,3 +440,15 @@ export const dashboardAnalyticsApi = {
     api.get('/api/dashboard-analytics/activity-summary', { params: { days } }),
 };
 
+// Billing API
+export const billingApi = {
+  getSubscription: () => api.get('/api/billing/subscription'),
+  getPlans: () => api.get('/api/billing/plans'),
+  subscribe: (planTier: 'PRO' | 'ENTERPRISE') => 
+    api.post('/api/billing/subscribe', { planTier }),
+  activate: (subscriptionId: string) => 
+    api.post('/api/billing/activate', { subscriptionId }),
+  cancel: () => api.post('/api/billing/cancel'),
+  getInvoices: () => api.get('/api/billing/invoices'),
+};
+
